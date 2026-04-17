@@ -1,0 +1,643 @@
+/* ═══════════════════════════════════════════════════
+   UserCreation.css
+   ═══════════════════════════════════════════════════ */
+
+.uc-page {
+  padding: 28px 32px;
+  animation: uc-fadein 0.25s ease;
+}
+@keyframes uc-fadein {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ══════════════════════════
+   PAGE HEADER
+══════════════════════════ */
+.uc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+.uc-breadcrumb-active { color: var(--text-primary, #1e293b); }
+:root.dark .uc-breadcrumb-active { color: #e2e8f0; }
+
+.uc-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.uc-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.uc-heading-icon {
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  background: var(--primary, #3b82f6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+}
+.uc-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin: 0;
+}
+.uc-subheading {
+  font-size: 13px;
+  color: var(--text-muted, #64748b);
+  margin: 3px 0 0;
+}
+:root.dark .uc-heading    { color: #f1f5f9; }
+:root.dark .uc-subheading { color: #94a3b8; }
+
+/* ── Create button ── */
+.uc-create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: var(--primary, #3b82f6);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 2px 10px rgba(59,130,246,0.3);
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.uc-create-btn:hover  { background: #2563eb; box-shadow: 0 4px 16px rgba(59,130,246,0.4); }
+.uc-create-btn:active { transform: scale(0.97); }
+
+/* ══════════════════════════
+   ROLE CARDS GRID
+══════════════════════════ */
+.uc-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+@media (max-width: 1024px) { .uc-roles-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .uc-roles-grid { grid-template-columns: 1fr; } }
+
+.uc-role-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  border: 1.5px solid var(--border, #e2e8f0);
+  background: var(--card-bg, #fff);
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.uc-role-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+:root.dark .uc-role-card { background: #1e293b; border-color: #334155; }
+
+.uc-role-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 18px 14px;
+}
+.uc-role-icon-wrap {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.uc-role-access-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.uc-role-card-body {
+  padding: 0 18px 16px;
+  flex: 1;
+}
+.uc-role-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin: 0 0 6px;
+}
+.uc-role-card-desc {
+  font-size: 12.5px;
+  color: var(--text-muted, #64748b);
+  line-height: 1.6;
+  margin: 0;
+}
+:root.dark .uc-role-card-title { color: #f1f5f9; }
+:root.dark .uc-role-card-desc  { color: #94a3b8; }
+
+.uc-role-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border, #e2e8f0);
+}
+:root.dark .uc-role-card-footer { border-color: #334155; }
+
+.uc-role-count { display: flex; align-items: baseline; gap: 5px; }
+.uc-role-count-num   { font-size: 22px; font-weight: 700; color: var(--text-primary, #1e293b); }
+.uc-role-count-label { font-size: 12px; color: var(--text-muted, #94a3b8); font-weight: 500; }
+:root.dark .uc-role-count-num { color: #f1f5f9; }
+
+.uc-role-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+}
+.uc-role-add-btn:active { transform: scale(0.96); }
+
+/* ══════════════════════════
+   ROLE COLOR TOKENS
+══════════════════════════ */
+
+/* Innovation — amber */
+.role-innovation .uc-role-icon-wrap    { background: #fffbeb; color: #d97706; }
+.role-innovation .uc-role-access-badge { background: #fef3c7; color: #b45309; }
+.role-innovation .uc-role-add-btn      { background: #fef3c7; color: #b45309; }
+.role-innovation .uc-role-add-btn:hover{ background: #fde68a; }
+.role-innovation:hover                 { border-color: #fbbf24; }
+:root.dark .role-innovation .uc-role-icon-wrap    { background: #3d2c00; color: #fbbf24; }
+:root.dark .role-innovation .uc-role-access-badge { background: #3d2c00; color: #fbbf24; }
+:root.dark .role-innovation .uc-role-add-btn      { background: #3d2c00; color: #fbbf24; }
+:root.dark .role-innovation .uc-role-add-btn:hover{ background: #4d3800; }
+
+/* Audit — slate/indigo */
+.role-audit .uc-role-icon-wrap    { background: #eef2ff; color: #4f46e5; }
+.role-audit .uc-role-access-badge { background: #eef2ff; color: #4338ca; }
+.role-audit .uc-role-add-btn      { background: #eef2ff; color: #4338ca; }
+.role-audit .uc-role-add-btn:hover{ background: #e0e7ff; }
+.role-audit:hover                 { border-color: #818cf8; }
+:root.dark .role-audit .uc-role-icon-wrap    { background: #1e1b4b; color: #a5b4fc; }
+:root.dark .role-audit .uc-role-access-badge { background: #1e1b4b; color: #a5b4fc; }
+:root.dark .role-audit .uc-role-add-btn      { background: #1e1b4b; color: #a5b4fc; }
+:root.dark .role-audit .uc-role-add-btn:hover{ background: #27248a; }
+
+/* HR — rose */
+.role-hr .uc-role-icon-wrap    { background: #fff1f2; color: #e11d48; }
+.role-hr .uc-role-access-badge { background: #ffe4e6; color: #be123c; }
+.role-hr .uc-role-add-btn      { background: #ffe4e6; color: #be123c; }
+.role-hr .uc-role-add-btn:hover{ background: #fecdd3; }
+.role-hr:hover                 { border-color: #fb7185; }
+:root.dark .role-hr .uc-role-icon-wrap    { background: #4c0519; color: #fda4af; }
+:root.dark .role-hr .uc-role-access-badge { background: #4c0519; color: #fda4af; }
+:root.dark .role-hr .uc-role-add-btn      { background: #4c0519; color: #fda4af; }
+:root.dark .role-hr .uc-role-add-btn:hover{ background: #5f0820; }
+
+/* Accounting — emerald */
+.role-accounting .uc-role-icon-wrap    { background: #ecfdf5; color: #059669; }
+.role-accounting .uc-role-access-badge { background: #d1fae5; color: #047857; }
+.role-accounting .uc-role-add-btn      { background: #d1fae5; color: #047857; }
+.role-accounting .uc-role-add-btn:hover{ background: #a7f3d0; }
+.role-accounting:hover                 { border-color: #34d399; }
+:root.dark .role-accounting .uc-role-icon-wrap    { background: #022c22; color: #34d399; }
+:root.dark .role-accounting .uc-role-access-badge { background: #022c22; color: #34d399; }
+:root.dark .role-accounting .uc-role-add-btn      { background: #022c22; color: #34d399; }
+:root.dark .role-accounting .uc-role-add-btn:hover{ background: #03382b; }
+
+/* Recruitment — cyan */
+.role-recruitment .uc-role-icon-wrap    { background: #ecfeff; color: #0891b2; }
+.role-recruitment .uc-role-access-badge { background: #cffafe; color: #0e7490; }
+.role-recruitment .uc-role-add-btn      { background: #cffafe; color: #0e7490; }
+.role-recruitment .uc-role-add-btn:hover{ background: #a5f3fc; }
+.role-recruitment:hover                 { border-color: #22d3ee; }
+:root.dark .role-recruitment .uc-role-icon-wrap    { background: #083344; color: #22d3ee; }
+:root.dark .role-recruitment .uc-role-access-badge { background: #083344; color: #22d3ee; }
+:root.dark .role-recruitment .uc-role-add-btn      { background: #083344; color: #22d3ee; }
+:root.dark .role-recruitment .uc-role-add-btn:hover{ background: #0a3f56; }
+
+/* Creatives — purple */
+.role-creatives .uc-role-icon-wrap    { background: #faf5ff; color: #9333ea; }
+.role-creatives .uc-role-access-badge { background: #f3e8ff; color: #7e22ce; }
+.role-creatives .uc-role-add-btn      { background: #f3e8ff; color: #7e22ce; }
+.role-creatives .uc-role-add-btn:hover{ background: #e9d5ff; }
+.role-creatives:hover                 { border-color: #c084fc; }
+:root.dark .role-creatives .uc-role-icon-wrap    { background: #2e1a52; color: #c084fc; }
+:root.dark .role-creatives .uc-role-access-badge { background: #2e1a52; color: #c084fc; }
+:root.dark .role-creatives .uc-role-add-btn      { background: #2e1a52; color: #c084fc; }
+:root.dark .role-creatives .uc-role-add-btn:hover{ background: #3d2368; }
+
+/* Marketing — orange */
+.role-marketing .uc-role-icon-wrap    { background: #fff7ed; color: #ea580c; }
+.role-marketing .uc-role-access-badge { background: #ffedd5; color: #c2410c; }
+.role-marketing .uc-role-add-btn      { background: #ffedd5; color: #c2410c; }
+.role-marketing .uc-role-add-btn:hover{ background: #fed7aa; }
+.role-marketing:hover                 { border-color: #fb923c; }
+:root.dark .role-marketing .uc-role-icon-wrap    { background: #431407; color: #fb923c; }
+:root.dark .role-marketing .uc-role-access-badge { background: #431407; color: #fb923c; }
+:root.dark .role-marketing .uc-role-add-btn      { background: #431407; color: #fb923c; }
+:root.dark .role-marketing .uc-role-add-btn:hover{ background: #581c0a; }
+
+/* Operations — teal */
+.role-operations .uc-role-icon-wrap    { background: #f0fdfa; color: #0d9488; }
+.role-operations .uc-role-access-badge { background: #ccfbf1; color: #0f766e; }
+.role-operations .uc-role-add-btn      { background: #ccfbf1; color: #0f766e; }
+.role-operations .uc-role-add-btn:hover{ background: #99f6e4; }
+.role-operations:hover                 { border-color: #2dd4bf; }
+:root.dark .role-operations .uc-role-icon-wrap    { background: #042f2e; color: #2dd4bf; }
+:root.dark .role-operations .uc-role-access-badge { background: #042f2e; color: #2dd4bf; }
+:root.dark .role-operations .uc-role-add-btn      { background: #042f2e; color: #2dd4bf; }
+:root.dark .role-operations .uc-role-add-btn:hover{ background: #063f3e; }
+
+/* User — blue */
+.role-user .uc-role-icon-wrap    { background: #eff6ff; color: #2563eb; }
+.role-user .uc-role-access-badge { background: #dbeafe; color: #1d4ed8; }
+.role-user .uc-role-add-btn      { background: #dbeafe; color: #1d4ed8; }
+.role-user .uc-role-add-btn:hover{ background: #bfdbfe; }
+.role-user:hover                 { border-color: #60a5fa; }
+:root.dark .role-user .uc-role-icon-wrap    { background: #0c1e4a; color: #60a5fa; }
+:root.dark .role-user .uc-role-access-badge { background: #0c1e4a; color: #60a5fa; }
+:root.dark .role-user .uc-role-add-btn      { background: #0c1e4a; color: #60a5fa; }
+:root.dark .role-user .uc-role-add-btn:hover{ background: #102563; }
+
+/* ══════════════════════════
+   MODAL
+══════════════════════════ */
+.uc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: uc-fadein 0.15s ease;
+}
+
+.uc-modal {
+  background: var(--card-bg, #fff);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: uc-modal-in 0.2s ease;
+}
+@keyframes uc-modal-in {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+:root.dark .uc-modal { background: #1e293b; }
+
+.uc-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+:root.dark .uc-modal-header { border-color: #334155; }
+
+.uc-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.uc-modal-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal icon uses same role color tokens */
+.role-innovation .uc-modal-icon { background: #fffbeb; color: #d97706; }
+.role-audit      .uc-modal-icon { background: #eef2ff; color: #4f46e5; }
+.role-hr         .uc-modal-icon { background: #fff1f2; color: #e11d48; }
+.role-accounting .uc-modal-icon { background: #ecfdf5; color: #059669; }
+.role-recruitment.uc-modal-icon { background: #ecfeff; color: #0891b2; }
+.role-creatives  .uc-modal-icon { background: #faf5ff; color: #9333ea; }
+.role-marketing  .uc-modal-icon { background: #fff7ed; color: #ea580c; }
+.role-operations .uc-modal-icon { background: #f0fdfa; color: #0d9488; }
+.role-user       .uc-modal-icon { background: #eff6ff; color: #2563eb; }
+
+:root.dark .role-innovation .uc-modal-icon { background: #3d2c00; color: #fbbf24; }
+:root.dark .role-audit      .uc-modal-icon { background: #1e1b4b; color: #a5b4fc; }
+:root.dark .role-hr         .uc-modal-icon { background: #4c0519; color: #fda4af; }
+:root.dark .role-accounting .uc-modal-icon { background: #022c22; color: #34d399; }
+:root.dark .role-recruitment .uc-modal-icon{ background: #083344; color: #22d3ee; }
+:root.dark .role-creatives  .uc-modal-icon { background: #2e1a52; color: #c084fc; }
+:root.dark .role-marketing  .uc-modal-icon { background: #431407; color: #fb923c; }
+:root.dark .role-operations .uc-modal-icon { background: #042f2e; color: #2dd4bf; }
+:root.dark .role-user       .uc-modal-icon { background: #0c1e4a; color: #60a5fa; }
+
+.uc-modal-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin: 0;
+}
+.uc-modal-subtitle {
+  font-size: 12px; color: var(--text-muted, #64748b);
+  margin: 2px 0 0;
+}
+:root.dark .uc-modal-title    { color: #f1f5f9; }
+:root.dark .uc-modal-subtitle { color: #94a3b8; }
+
+.uc-modal-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--input-bg, #f1f5f9);
+  color: var(--text-muted, #64748b);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.uc-modal-close:hover { background: #e2e8f0; color: #1e293b; }
+:root.dark .uc-modal-close { background: #334155; color: #94a3b8; }
+:root.dark .uc-modal-close:hover { background: #475569; color: #f1f5f9; }
+
+.uc-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.uc-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border, #e2e8f0);
+  margin-top: 20px;
+}
+:root.dark .uc-modal-actions { border-color: #334155; }
+
+/* ══════════════════════════
+   ROLE PICKER (from Create btn)
+══════════════════════════ */
+.uc-role-picker {
+  background: var(--card-bg, #fff);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: uc-modal-in 0.2s ease;
+}
+:root.dark .uc-role-picker { background: #1e293b; }
+
+.uc-role-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+:root.dark .uc-role-picker-header { border-color: #334155; }
+
+.uc-role-picker-grid {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.uc-role-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: var(--input-bg, #f8fafc);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.uc-role-picker-item:hover  { transform: translateX(3px); }
+.uc-role-picker-item:active { transform: translateX(1px); }
+:root.dark .uc-role-picker-item { background: #0f172a; }
+
+/* Picker item hover accent per role */
+.role-innovation.uc-role-picker-item:hover { border-color: #fbbf24; background: #fffbeb; }
+.role-audit.uc-role-picker-item:hover      { border-color: #818cf8; background: #eef2ff; }
+.role-hr.uc-role-picker-item:hover         { border-color: #fb7185; background: #fff1f2; }
+.role-accounting.uc-role-picker-item:hover { border-color: #34d399; background: #ecfdf5; }
+.role-recruitment.uc-role-picker-item:hover{ border-color: #22d3ee; background: #ecfeff; }
+.role-creatives.uc-role-picker-item:hover  { border-color: #c084fc; background: #faf5ff; }
+.role-marketing.uc-role-picker-item:hover  { border-color: #fb923c; background: #fff7ed; }
+.role-operations.uc-role-picker-item:hover { border-color: #2dd4bf; background: #f0fdfa; }
+.role-user.uc-role-picker-item:hover       { border-color: #60a5fa; background: #eff6ff; }
+
+:root.dark .role-innovation.uc-role-picker-item:hover { background: #3d2c00; border-color: #fbbf24; }
+:root.dark .role-audit.uc-role-picker-item:hover      { background: #1e1b4b; border-color: #818cf8; }
+:root.dark .role-hr.uc-role-picker-item:hover         { background: #4c0519; border-color: #fb7185; }
+:root.dark .role-accounting.uc-role-picker-item:hover { background: #022c22; border-color: #34d399; }
+:root.dark .role-recruitment.uc-role-picker-item:hover{ background: #083344; border-color: #22d3ee; }
+:root.dark .role-creatives.uc-role-picker-item:hover  { background: #2e1a52; border-color: #c084fc; }
+:root.dark .role-marketing.uc-role-picker-item:hover  { background: #431407; border-color: #fb923c; }
+:root.dark .role-operations.uc-role-picker-item:hover { background: #042f2e; border-color: #2dd4bf; }
+:root.dark .role-user.uc-role-picker-item:hover       { background: #0c1e4a; border-color: #60a5fa; }
+
+.uc-rpi-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.role-innovation .uc-rpi-icon { background: #fffbeb; color: #d97706; }
+.role-audit      .uc-rpi-icon { background: #eef2ff; color: #4f46e5; }
+.role-hr         .uc-rpi-icon { background: #fff1f2; color: #e11d48; }
+.role-accounting .uc-rpi-icon { background: #ecfdf5; color: #059669; }
+.role-recruitment .uc-rpi-icon{ background: #ecfeff; color: #0891b2; }
+.role-creatives  .uc-rpi-icon { background: #faf5ff; color: #9333ea; }
+.role-marketing  .uc-rpi-icon { background: #fff7ed; color: #ea580c; }
+.role-operations .uc-rpi-icon { background: #f0fdfa; color: #0d9488; }
+.role-user       .uc-rpi-icon { background: #eff6ff; color: #2563eb; }
+
+:root.dark .role-innovation .uc-rpi-icon  { background: #3d2c00; color: #fbbf24; }
+:root.dark .role-audit      .uc-rpi-icon  { background: #1e1b4b; color: #a5b4fc; }
+:root.dark .role-hr         .uc-rpi-icon  { background: #4c0519; color: #fda4af; }
+:root.dark .role-accounting .uc-rpi-icon  { background: #022c22; color: #34d399; }
+:root.dark .role-recruitment .uc-rpi-icon { background: #083344; color: #22d3ee; }
+:root.dark .role-creatives  .uc-rpi-icon  { background: #2e1a52; color: #c084fc; }
+:root.dark .role-marketing  .uc-rpi-icon  { background: #431407; color: #fb923c; }
+:root.dark .role-operations .uc-rpi-icon  { background: #042f2e; color: #2dd4bf; }
+:root.dark .role-user       .uc-rpi-icon  { background: #0c1e4a; color: #60a5fa; }
+
+.uc-rpi-info  { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.uc-rpi-label { font-size: 13.5px; font-weight: 600; color: var(--text-primary, #1e293b); }
+.uc-rpi-count { font-size: 11.5px; color: var(--text-muted, #64748b); }
+.uc-rpi-arrow { color: var(--text-muted, #94a3b8); flex-shrink: 0; }
+:root.dark .uc-rpi-label { color: #e2e8f0; }
+:root.dark .uc-rpi-count { color: #94a3b8; }
+
+/* ══════════════════════════
+   FORM (inside modal)
+══════════════════════════ */
+.uc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 0;
+}
+@media (max-width: 500px) { .uc-grid-2 { grid-template-columns: 1fr; } }
+
+.uc-field  { display: flex; flex-direction: column; gap: 6px; }
+.uc-label  {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600;
+  color: var(--text-secondary, #475569);
+}
+:root.dark .uc-label { color: #94a3b8; }
+.uc-label-icon { color: var(--primary, #3b82f6); flex-shrink: 0; }
+
+.uc-input-wrap { position: relative; }
+.uc-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border, #e2e8f0);
+  background: var(--input-bg, #f8fafc);
+  font-size: 14px;
+  color: var(--text-primary, #1e293b);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.uc-input::placeholder { color: #94a3b8; }
+.uc-input:focus {
+  border-color: var(--primary, #3b82f6);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+.has-error .uc-input { border-color: #ef4444; }
+.has-error .uc-input:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
+:root.dark .uc-input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+:root.dark .uc-input:focus { background: #0f172a; border-color: #3b82f6; }
+
+.uc-select-wrap::after {
+  content: ''; pointer-events: none;
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #94a3b8;
+}
+.uc-select { appearance: none; cursor: pointer; padding-right: 36px; }
+
+.uc-password-wrap .uc-input { padding-right: 42px; }
+.uc-eye-btn {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 4px;
+  color: #94a3b8; display: flex; transition: color 0.15s;
+}
+.uc-eye-btn:hover { color: var(--primary, #3b82f6); }
+
+.uc-error {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: #ef4444; font-weight: 500;
+}
+
+/* Password strength */
+.uc-strength { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.uc-strength-bars { display: flex; gap: 4px; }
+.uc-strength-bar {
+  height: 4px; width: 28px; border-radius: 4px;
+  background: var(--border, #e2e8f0);
+  transition: background 0.2s;
+}
+:root.dark .uc-strength-bar { background: #334155; }
+.uc-strength-label { font-size: 11.5px; font-weight: 600; }
+
+/* Toasts */
+.uc-toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  font-size: 13.5px; font-weight: 500;
+  margin: 0 24px 0;
+}
+.uc-toast--success { background: #f0fdf4; color: #15803d; border-bottom: 1px solid #bbf7d0; }
+.uc-toast--error   { background: #fef2f2; color: #b91c1c; border-bottom: 1px solid #fecaca; }
+:root.dark .uc-toast--success { background: #052e16; color: #4ade80; border-color: #166534; }
+:root.dark .uc-toast--error   { background: #2d0a0a; color: #f87171; border-color: #7f1d1d; }
+
+/* Buttons */
+.uc-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 20px; border-radius: 9px;
+  font-size: 13.5px; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: background 0.15s, transform 0.1s;
+  font-family: inherit;
+}
+.uc-btn:active { transform: scale(0.97); }
+.uc-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.uc-btn--primary { background: var(--primary, #3b82f6); color: #fff; box-shadow: 0 2px 8px rgba(59,130,246,0.3); }
+.uc-btn--primary:hover:not(:disabled) { background: #2563eb; }
+.uc-btn--ghost { background: transparent; color: #475569; border: 1.5px solid var(--border, #e2e8f0); }
+.uc-btn--ghost:hover:not(:disabled) { background: #f1f5f9; }
+:root.dark .uc-btn--ghost { color: #94a3b8; border-color: #334155; }
+:root.dark .uc-btn--ghost:hover:not(:disabled) { background: #334155; }
+
+.uc-spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Mobile */
+@media (max-width: 600px) {
+  .uc-page         { padding: 20px 16px; }
+  .uc-modal-body   { padding: 16px; }
+  .uc-modal-header { padding: 16px; }
+  .uc-modal-actions{ margin-top: 14px; padding-top: 14px; }
+}
+
+/* ── Count skeleton loader ── */
+.uc-count-skeleton {
+  display: inline-block;
+  width: 32px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: uc-shimmer 1.2s infinite;
+  vertical-align: middle;
+}
+@keyframes uc-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+:root.dark .uc-count-skeleton {
+  background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
+  background-size: 200% 100%;
+}

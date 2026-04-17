@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@azure/identity": "^4.13.0",
+    "@hcaptcha/react-hcaptcha": "^2.0.2",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "axios": "^1.13.6",
+    "dompurify": "^3.3.2",
+    "react-icons": "^5.5.0",
+    "recharts": "^3.7.0"
+  }
+}
