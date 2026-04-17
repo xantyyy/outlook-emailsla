@@ -21,17 +21,17 @@
   --text-muted:       #9ca3af;
   --border:           #e5e7eb;
 
-  --bg-page:          #f9f8f8;
+  --bg-page:          #ffffff;
   --bg-white:         #ffffff;
-  --bg-muted:         #f3f4f6;
-  --bg-inner:         #f9fafb;
-  --bg-toolbar:       #fafafa;
+  --bg-muted:         #f8f8f8;
+  --bg-inner:         #ffffff;
+  --bg-toolbar:       #ffffff;
 
   --sidebar-bg:       #ffffff;
-  --sidebar-border:   #e8d5d5;
-  --search-bg:        #f9fafb;
+  --sidebar-border:   #f1f1f1;
+  --search-bg:        #ffffff;
   --search-focus-bg:  #ffffff;
-  --tab-border:       #f0f0f0;
+  --tab-border:       #f1f1f1;
   --scrollbar-thumb:  #fbc9c9;
 
   --msg-hover:        rgba(161,3,4,0.06);
@@ -50,23 +50,23 @@
 
   --action-bar-bg:    #ffffff;
   --action-bar-border:#f0f0f5;
-  --action-btn-hover: #f3f4f6;
-  --action-btn-active-bg:   rgba(161,3,4,0.08);
+  --action-btn-hover: rgba(161,3,4,0.08);
+  --action-btn-active-bg:   rgba(161,3,4,0.12);
   --action-btn-active-color:#a10304;
-  --action-btn-active-hover:rgba(161,3,4,0.14);
+  --action-btn-active-hover:rgba(161,3,4,0.18);
 
   --compose-bg:       #ffffff;
-  --compose-divider:  #f0f0f5;
+  --compose-divider:  #f1f1f1;
   --compose-tool-hover: rgba(161,3,4,0.08);
 
-  --toolbar-bg:       #fafafa;
-  --toolbar-divider:  #e5e7eb;
-  --toolbar-btn-color:#6b7280;
+  --toolbar-bg:       #ffffff;
+  --toolbar-divider:  #f1f1f1;
+  --toolbar-btn-color:#a10304;
   --toolbar-hover-bg: rgba(161,3,4,0.08);
   --toolbar-hover-color:#a10304;
   --toolbar-select-bg:#ffffff;
-  --toolbar-select-border:#e5e7eb;
-  --toolbar-select-color:#6b7280;
+  --toolbar-select-border:#f1f1f1;
+  --toolbar-select-color:#a10304;
 
   --dropdown-bg:      #ffffff;
   --dropdown-border:  #e5e7eb;
@@ -115,8 +115,8 @@
   --section-divider:  #e5e7eb;
 
   --templates-btn-bg: #ffffff;
-  --templates-btn-border:#e5e7eb;
-  --templates-btn-color:#6b7280;
+  --templates-btn-border:#a10304;
+  --templates-btn-color:#a10304;
   --templates-hover-bg: rgba(161,3,4,0.08);
   --templates-hover-border: rgba(161,3,4,0.25);
   --templates-hover-color: #a10304;

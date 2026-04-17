@@ -5,7 +5,7 @@ import ReplyBox from "./ReplyBox";
 
 /* ── Design tokens (Light Mode — Maroon & White) ────────────────────────────── */
 const T = {
-  bg0:         '#f9f5f5',
+  bg0:         '#ffffff',
   bg1:         '#ffffff',
   bg2:         '#f5eeee',
   bg3:         '#ede0e0',
@@ -13,9 +13,9 @@ const T = {
   surfaceHi:   '#fdf8f8',
   border:      'rgba(139,0,0,0.10)',
   borderHi:    'rgba(139,0,0,0.18)',
-  text0:       '#111827',
-  text1:       '#374151',
-  text2:       '#9ca3af',
+  text0:       '#0d0ae2',
+  text1:       '#000000',
+  text2:       '#000000',
   violet:      '#8b0000',
   violetBright:'#6b0000',
   violetLo:    'rgba(139,0,0,0.08)',
@@ -240,7 +240,7 @@ function ThreadMessageBody({ body, bodyType, isSentByMe, onLong }) {
         <div style={{ display:'flex',alignItems:'center',gap:8,marginTop:8,flexWrap:'wrap' }}>
           {(isTruncated || (expanded && realHeight > MAX_BUBBLE_HEIGHT)) && (
             <button onClick={e=>{e.stopPropagation();setExpanded(v=>!v);}}
-              style={{ display:'inline-flex',alignItems:'center',gap:4,padding:'4px 12px',border:'none',borderRadius:20,background:'#f0f0f3',boxShadow:`4px 4px 12px rgba(13,39,80,0.14), -3px -3px 8px rgba(255,255,255,0.9)`,fontSize:10,color:btnColor,cursor:'pointer',fontFamily:T.font,fontWeight:600,letterSpacing:'0.02em',transition:'all 0.15s' }}
+              style={{ display:'inline-flex',alignItems:'center',gap:4,padding:'4px 12px',border:'none',borderRadius:20,background:'#ffffff',boxShadow:`4px 4px 12px rgba(13,39,80,0.14), -3px -3px 8px rgba(255,255,255,0.9)`,fontSize:10,color:btnColor,cursor:'pointer',fontFamily:T.font,fontWeight:600,letterSpacing:'0.02em',transition:'all 0.15s' }}
               onMouseEnter={e=>e.currentTarget.style.boxShadow='6px 6px 16px rgba(13,39,80,0.18), -4px -4px 10px rgba(255,255,255,0.95)'}
               onMouseLeave={e=>e.currentTarget.style.boxShadow='4px 4px 12px rgba(13,39,80,0.14), -3px -3px 8px rgba(255,255,255,0.9)'}>
               {expanded ? 'Show less' : 'See more'}
@@ -249,7 +249,7 @@ function ThreadMessageBody({ body, bodyType, isSentByMe, onLong }) {
           )}
           {hasQuoted && (
             <button onClick={e=>{e.stopPropagation();setShowFull(v=>!v);}}
-              style={{ display:'inline-flex',alignItems:'center',gap:5,padding:'4px 12px',border:'none',borderRadius:20,background:'#f0f0f3',boxShadow:`4px 4px 12px rgba(13,39,80,0.14), -3px -3px 8px rgba(255,255,255,0.9)`,fontSize:10,color:btnColor,cursor:'pointer',fontFamily:T.font,fontWeight:600,letterSpacing:'0.02em',transition:'all 0.15s' }}
+              style={{ display:'inline-flex',alignItems:'center',gap:5,padding:'4px 12px',border:'none',borderRadius:20,background:'#ffffff',boxShadow:`4px 4px 12px rgba(13,39,80,0.14), -3px -3px 8px rgba(255,255,255,0.9)`,fontSize:10,color:btnColor,cursor:'pointer',fontFamily:T.font,fontWeight:600,letterSpacing:'0.02em',transition:'all 0.15s' }}
               onMouseEnter={e=>e.currentTarget.style.boxShadow='6px 6px 16px rgba(13,39,80,0.18), -4px -4px 10px rgba(255,255,255,0.95)'}
               onMouseLeave={e=>e.currentTarget.style.boxShadow='4px 4px 12px rgba(13,39,80,0.14), -3px -3px 8px rgba(255,255,255,0.9)'}>
               <span style={{letterSpacing:3,fontSize:8}}>•••</span>{showFull?'Hide quoted':'Show quoted'}
@@ -265,7 +265,7 @@ function DateDivider({ label }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:12, margin:'18px 0 14px', userSelect:'none' }}>
       <div style={{ flex:1, height:1, background:'linear-gradient(to right, transparent, rgba(100,116,160,0.18))' }}/>
-      <span style={{ fontSize:11, fontWeight:600, color:T.text2, fontFamily:T.font, letterSpacing:'0.04em', whiteSpace:'nowrap', padding:'2px 10px', borderRadius:20, background:'#f0f0f3', boxShadow:'3px 3px 8px rgba(13,39,80,0.10), -2px -2px 6px rgba(255,255,255,0.9)' }}>
+      <span style={{ fontSize:11, fontWeight:600, color:T.text2, fontFamily:T.font, letterSpacing:'0.04em', whiteSpace:'nowrap', padding:'2px 10px', borderRadius:20, background:'#ffffff', boxShadow:'3px 3px 8px rgba(207, 209, 212, 0.1), -1px -1px 4px rgba(99, 97, 97, 0.9)' }}>
         {label}
       </span>
       <div style={{ flex:1, height:1, background:'linear-gradient(to left, transparent, rgba(100,116,160,0.18))' }}/>
@@ -284,80 +284,179 @@ function getDateLabel(iso) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
 }
 
-function ThreadCard({ msg, isLast, onReply, onReplyAll, outlookConnected, isSentByMe }) {
-  const [isLong, setIsLong] = useState(false);
-  const name  = msg.from?.emailAddress?.name||msg.from?.emailAddress?.address||'Unknown';
-  const date  = formatThreadDate(msg.receivedDateTime||msg.sentDateTime);
-  const color = isSentByMe ? '#1d4ed8' : avatarColor(name);
-  const bubbleBg     = isSentByMe ? `#dde8f8` : `#f0f0f3`;
-  const bubbleShadow = `8px 8px 24px rgba(13,39,80,0.18), -6px -6px 16px rgba(255,255,255,0.9)`;
-
+function MessageHeader({ name, email, to, cc, date, isSentByMe, onReply, onReplyAll }) {
+  const color = isSentByMe ? T.violet : avatarColor(name);
   return (
-    <div style={{ display:'flex',flexDirection:isSentByMe?'row-reverse':'row',alignItems:'flex-end',gap:8,marginBottom:20,animation:'ed-fadeUp 0.25s ease both' }}>
+    <div style={{ display:'flex', gap:12, marginBottom:16 }}>
       {/* Avatar */}
-      <div style={{ width:34,height:34,borderRadius:12,flexShrink:0,background:color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#fff',alignSelf:'flex-end',marginBottom:2,boxShadow:`0 0 0 2px ${T.bg2},0 4px 10px ${color}45`,fontFamily:T.font,letterSpacing:'0.02em' }}>
-        {initials(name)}
-      </div>
-
-      <div style={{ display:'flex',flexDirection:'column',alignItems:isSentByMe?'flex-end':'flex-start',maxWidth:'86%',width:isLong?'86%':'fit-content',gap:4 }}>
-        {/* Sender + date */}
-        <div style={{ display:'flex',alignItems:'center',gap:5,flexDirection:isSentByMe?'row-reverse':'row' }}>
-          <span style={{ fontSize:12.5,fontWeight:600,color:T.text0,fontFamily:T.font,letterSpacing:'-0.01em' }}>{isSentByMe?'You':name}</span>
-          <span style={{ fontSize:12,color:T.text2,fontFamily:T.font }}>{date}</span>
+      <div style={{ position:'relative', flexShrink:0 }}>
+        <div style={{ width:44, height:44, borderRadius:'50%', background:color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:700, color:'#fff', fontFamily:T.font }}>
+          {initials(name)}
         </div>
-
-        {/* Bubble */}
-        <div style={{ background:bubbleBg,border:'none',borderRadius:isSentByMe?'14px 14px 4px 14px':'14px 14px 14px 4px',padding:'9px 14px',boxShadow:bubbleShadow,transition:'transform 0.18s ease,box-shadow 0.18s ease',width:isLong?'100%':'fit-content',minWidth:60,maxWidth:'100%' }}
-          onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow=`12px 12px 32px rgba(13,39,80,0.22), -6px -6px 16px rgba(255,255,255,0.9)`;}}
-          onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow=bubbleShadow;}}>
-          <ThreadMessageBody body={msg.body?.content||msg.bodyPreview} bodyType={msg.body?.contentType} isSentByMe={isSentByMe} onLong={setIsLong} />
+        <div style={{ position:'absolute', bottom:-2, right:-2, width:14, height:14, borderRadius:'50%', background:T.green, border:`2px solid ${T.bg1}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+      {/* Info */}
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:2 }}>
+          <span style={{ fontSize:15, fontWeight:700, color:T.text0, fontFamily:T.font }}>{name}</span>
+          <div style={{ display:'flex', alignItems:'center', gap:10, color:T.text2 }}>
+            {/* Action icon buttons */}
+            {[
+              { title:'Emoji', path:<><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></>, onClick:null },
+              { title:'Reply', path:<><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></>, onClick:onReply },
+              { title:'Reply All', path:<><polyline points="7 17 2 12 7 7"/><polyline points="12 17 7 12 12 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H2"/></>, onClick:onReplyAll },
+            ].map(({title, path, onClick}) => (
+              <button key={title} title={title} onClick={e=>{e.stopPropagation();onClick?.();}}
+                style={{ all:'unset', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', width:28, height:28, borderRadius:8, transition:'all 0.15s' }}
+                onMouseEnter={e=>{e.currentTarget.style.background=T.bg2; e.currentTarget.style.color=T.text0;}}
+                onMouseLeave={e=>{e.currentTarget.style.background='transparent'; e.currentTarget.style.color=T.text2;}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{path}</svg>
+              </button>
+            ))}
+            <div style={{ width:1, height:16, background:T.border, margin:'0 2px' }} />
+            <button title="More" style={{ all:'unset', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', width:28, height:28, borderRadius:8, transition:'all 0.15s' }}
+              onMouseEnter={e=>{e.currentTarget.style.background=T.bg2;}}
+              onMouseLeave={e=>{e.currentTarget.style.background='transparent';}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+          </div>
+        </div>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:13, color:T.text2, display:'flex', alignItems:'center', gap:4, fontFamily:T.font }}>
+              To:&nbsp;
+              <div style={{ display:'flex', alignItems:'center', gap:4, background:T.greenLo, padding:'1px 8px', borderRadius:4, color:T.green, fontWeight:600, fontSize:13 }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {to}
+              </div>
+            </div>
+            {cc && cc.length > 0 && (
+              <div style={{ fontSize:13, color:T.text2, display:'flex', alignItems:'center', gap:4, marginTop:4, fontFamily:T.font }}>
+                Cc:&nbsp;{cc.map((c,i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(217,119,6,0.08)', padding:'1px 8px', borderRadius:4, color:'#d97706', fontWeight:600 }}>
+                    {c.name || c.email}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <span style={{ fontSize:12, color:T.text2, flexShrink:0, marginTop:2, fontFamily:T.font }}>{date}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function OriginalMsgBubble({ msg, isOutlookEmail, onReply, onReplyAll, outlookConnected }) {
-  const [isLong, setIsLong] = useState(false);
-  const name  = msg.sender || 'Unknown';
-  const color = msg.avatarColor || avatarColor(name);
-  const bubbleBg     = '#f0f0f3';
-  const bubbleShadow = '8px 8px 24px rgba(13,39,80,0.18), -6px -6px 16px rgba(255,255,255,0.9)';
-  const date  = msg.time || '';
+function ThreadCard({ msg, isLast, onReply, onReplyAll, outlookConnected, isSentByMe }) {
+  const [showFull,    setShowFull]    = useState(false);
+  const [hasQuoted,   setHasQuoted]   = useState(false);
+  const [isExpanded,  setIsExpanded]  = useState(false);
+
+  const name       = msg.from?.emailAddress?.name||msg.from?.emailAddress?.address||'Unknown';
+  const email      = msg.from?.emailAddress?.address || '';
+  const rawDate    = msg.receivedDateTime||msg.sentDateTime;
+  const displayDate = rawDate ? new Date(rawDate).toLocaleDateString([],{weekday:'short',month:'numeric',day:'numeric',year:'numeric'})+' '+new Date(rawDate).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+  const to         = msg.toRecipients?.[0]?.emailAddress?.name || msg.toRecipients?.[0]?.emailAddress?.address || 'Recipient';
+  const cc         = (msg.ccRecipients||[]).map(r=>({name:r.emailAddress?.name, email:r.emailAddress?.address}));
+
+  if (!isExpanded) {
+    return (
+      <div onClick={()=>setIsExpanded(true)}
+        style={{ padding:'12px 20px', background:'#fff', border:'1px solid #e5e7eb', borderRadius:8, marginBottom:8, cursor:'pointer', display:'flex', alignItems:'center', gap:14, transition:'all 0.15s', boxShadow:'0 1px 3px rgba(139,0,0,0.06)' }}
+        onMouseEnter={e=>{e.currentTarget.style.borderColor='#dc2626'; e.currentTarget.style.boxShadow='0 2px 8px rgba(220,38,38,0.10)';}}
+        onMouseLeave={e=>{e.currentTarget.style.borderColor='#e5e7eb'; e.currentTarget.style.boxShadow='0 1px 3px rgba(139,0,0,0.06)';}}>
+        <div style={{ width:34, height:34, borderRadius:'50%', background:isSentByMe?T.violet:avatarColor(name), display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#fff', flexShrink:0, fontFamily:T.font }}>
+          {initials(isSentByMe?'You':name)}
+        </div>
+        <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontSize:13, fontWeight:700, color:T.text0, whiteSpace:'nowrap', fontFamily:T.font }}>{isSentByMe?'You':name}</span>
+          <span style={{ fontSize:13, color:T.text2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontFamily:T.font }}>{msg.bodyPreview||'...'}</span>
+        </div>
+        <span style={{ fontSize:12, color:T.text2, whiteSpace:'nowrap', fontFamily:T.font }}>{displayDate}</span>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display:'flex',flexDirection:'row',alignItems:'flex-end',gap:8,marginBottom:20,animation:'ed-fadeUp 0.3s ease' }}>
-      {/* Avatar */}
-      <div style={{ width:34,height:34,borderRadius:12,flexShrink:0,background:color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#fff',alignSelf:'flex-end',marginBottom:2,boxShadow:`0 0 0 2px ${T.bg2},0 4px 10px ${color}45`,fontFamily:T.font,letterSpacing:'0.02em' }}>
-        {initials(name)}
+    <div style={{ background:'#fff', border:'1.5px solid #dc2626', borderRadius:8, marginBottom:12, boxShadow:'rgba(139, 0, 0, 0.07) 0px 2px 8px', animation:'ed-fadeUp 0.25s ease' }}>
+      <div onClick={()=>setIsExpanded(false)} style={{ padding:'20px 24px 0', cursor:'pointer' }}>
+        <MessageHeader name={isSentByMe?'You':name} email={email} to={isSentByMe?to:'Me'} cc={isSentByMe?cc:[]} date={displayDate} isSentByMe={isSentByMe} onReply={onReply} onReplyAll={onReplyAll} />
       </div>
+      <div style={{ padding:'0 24px 20px' }}>
+        <ThreadMessageBody body={msg.body?.content||msg.bodyPreview} bodyType={msg.body?.contentType} isSentByMe={isSentByMe} onLong={()=>{}} />
+        {hasQuoted && (
+          <button onClick={()=>setShowFull(v=>!v)}
+            style={{ all:'unset', cursor:'pointer', display:'flex', alignItems:'center', gap:8, marginTop:14, color:T.text2, fontSize:12, fontWeight:600, fontFamily:T.font }}>
+            <span style={{ letterSpacing:2 }}>•••</span>{showFull?'Hide quoted':'Show quoted'}<span style={{ letterSpacing:2 }}>•••</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
-      <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-start',maxWidth:'86%',width:isLong?'86%':'fit-content',gap:4 }}>
-        {/* Sender + date row */}
-        <div style={{ display:'flex',alignItems:'center',gap:5 }}>
-          <span style={{ fontSize:12.5,fontWeight:600,color:T.text0,fontFamily:T.font,letterSpacing:'-0.01em' }}>{name}</span>
-          {isOutlookEmail && msg.senderEmail && <span style={{ fontSize:12,color:T.text2,fontFamily:T.font }}>{msg.senderEmail}</span>}
-          <span style={{ fontSize:12,color:T.text2,fontFamily:T.font }}>{date}</span>
+function OriginalMsgBubble({ msg, isOutlookEmail, onReply, onReplyAll, outlookConnected }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const name       = msg.sender || 'Unknown';
+  const rawDate    = msg.receivedAt || msg.sentAt;
+  const displayDate = rawDate
+    ? new Date(rawDate).toLocaleDateString([],{weekday:'short',month:'numeric',day:'numeric',year:'numeric'})+' '+new Date(rawDate).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+    : msg.time || '';
+  const to = 'Me';
+  const cc = msg.cc || [];
+
+  if (!isExpanded) {
+    return (
+      <div onClick={()=>setIsExpanded(true)}
+        style={{ padding:'12px 20px', background:'#fff', border:'1px solid #e5e7eb', borderRadius:8, marginBottom:8, cursor:'pointer', display:'flex', alignItems:'center', gap:14, transition:'all 0.15s', boxShadow:'0 1px 3px rgba(139,0,0,0.06)' }}
+        onMouseEnter={e=>{e.currentTarget.style.borderColor='#dc2626'; e.currentTarget.style.boxShadow='0 2px 8px rgba(220,38,38,0.10)';}}
+        onMouseLeave={e=>{e.currentTarget.style.borderColor='#e5e7eb'; e.currentTarget.style.boxShadow='0 1px 3px rgba(139,0,0,0.06)';}}>
+        <div style={{ width:34, height:34, borderRadius:'50%', background:avatarColor(name), display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#fff', flexShrink:0, fontFamily:T.font }}>
+          {initials(name)}
         </div>
-
-        {/* Bubble — same style as ThreadCard */}
-        <div style={{ background:bubbleBg,border:'none',borderRadius:'14px 14px 14px 4px',padding:'9px 14px',boxShadow:bubbleShadow,transition:'transform 0.18s ease,box-shadow 0.18s ease',width:isLong?'100%':'fit-content',minWidth:60,maxWidth:'100%' }}
-          onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='12px 12px 32px rgba(13,39,80,0.22), -6px -6px 16px rgba(255,255,255,0.9)';}}
-          onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow=bubbleShadow;}}>
-          <ThreadMessageBody body={msg.body} bodyType={msg.bodyType} isSentByMe={false} onLong={setIsLong}/>
+        <div style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontSize:13, fontWeight:700, color:T.text0, whiteSpace:'nowrap', fontFamily:T.font }}>{name}</span>
+          <span style={{ fontSize:13, color:T.text2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, fontFamily:T.font }}>{msg.preview||msg.body?.slice?.(0,80)||'...'}</span>
         </div>
+        <span style={{ fontSize:12, color:T.text2, whiteSpace:'nowrap', fontFamily:T.font }}>{displayDate}</span>
+      </div>
+    );
+  }
 
-        {/* Reply / Reply all — same as ThreadCard */}
+  return (
+    <div style={{ background:'#fff', border:'1.5px solid #dc2626', borderRadius:8, marginBottom:12, boxShadow:'rgba(139, 0, 0, 0.07) 0px 2px 8px', animation:'ed-fadeUp 0.3s ease' }}>
+      <div onClick={()=>setIsExpanded(false)} style={{ padding:'20px 24px 0', cursor:'pointer' }}>
+        <MessageHeader name={name} email={msg.senderEmail} to={to} cc={cc} date={displayDate} isSentByMe={false} onReply={onReply} onReplyAll={onReplyAll} />
+      </div>
+      <div style={{ padding:'0 24px 20px' }}>
+        <ThreadMessageBody body={msg.body} bodyType={msg.bodyType} isSentByMe={false} onLong={()=>{}} />
+        {msg.attachments && msg.attachments.length > 0 && (
+          <div style={{ marginTop:24 }}>
+            <span style={{ fontSize:11, fontWeight:700, color:T.text2, letterSpacing:'0.05em', textTransform:'uppercase', fontFamily:T.font }}>ATTACHMENTS</span>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:10, marginTop:10 }}>
+              {msg.attachments.map((file,i) => (
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:10, background:T.bg2, border:`1px solid ${T.border}`, minWidth:160 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                  <span style={{ fontSize:12, fontWeight:600, color:T.text1, fontFamily:T.font }}>{file.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {outlookConnected && (
-          <div style={{ display:'flex',gap:3,marginTop:1 }}>
+          <div style={{ display:'flex', gap:6, marginTop:16 }}>
             {[
-              {label:'Reply',     icon:<><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></>,    action:onReply},
+              {label:'Reply', icon:<><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></>, action:onReply},
+              {label:'Reply All', icon:<><polyline points="7 17 2 12 7 7"/><polyline points="12 17 7 12 12 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H2"/></>, action:onReplyAll},
             ].map(({label,icon,action})=>(
               <button key={label} onClick={e=>{e.stopPropagation();action?.();}}
-                style={{ display:'flex',alignItems:'center',gap:4,padding:'4px 11px',border:`1px solid ${T.borderHi}`,borderRadius:20,background:T.bg1,fontSize:11.5,fontWeight:600,color:T.text2,cursor:'pointer',transition:'all 0.15s',fontFamily:T.font,letterSpacing:'0.01em' }}
-                onMouseEnter={e=>{e.currentTarget.style.background=T.violetLo;e.currentTarget.style.color=T.violetBright;e.currentTarget.style.borderColor='rgba(139,0,0,0.3)';}}
-                onMouseLeave={e=>{e.currentTarget.style.background=T.bg1;e.currentTarget.style.color=T.text2;e.currentTarget.style.borderColor=T.borderHi;}}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
+                style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 14px', border:`1px solid ${T.border}`, borderRadius:20, background:T.bg1, fontSize:12, fontWeight:600, color:T.text2, cursor:'pointer', transition:'all 0.15s', fontFamily:T.font }}
+                onMouseEnter={e=>{e.currentTarget.style.background=T.violetLo; e.currentTarget.style.color=T.violet; e.currentTarget.style.borderColor=T.borderHi;}}
+                onMouseLeave={e=>{e.currentTarget.style.background=T.bg1; e.currentTarget.style.color=T.text2; e.currentTarget.style.borderColor=T.border;}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
                 {label}
               </button>
             ))}
@@ -521,11 +620,11 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
       `}</style>
 
       {/* ── Toolbar ── */}
-      <div style={{ display:'flex',alignItems:'center',gap:6,padding:'10px 16px',borderBottom:`1px solid ${T.border}`,background:'#f0f0f3',flexShrink:0,flexWrap:'wrap' }}>
+      <div style={{ display:'flex',alignItems:'center',gap:6,padding:'10px 16px',borderBottom:`1px solid ${T.border}`,background:'#ffffff',flexShrink:0,flexWrap:'wrap' }}>
 
         {/* Reply */}
         <button onClick={()=>openReply("reply")} title="Reply"
-          style={{ display:'flex',alignItems:'center',gap:6,padding:'7px 16px',borderRadius:20,border:'none',background:replyMode==='reply'?'inset':'#f0f0f3',boxShadow:replyMode==='reply'?'inset 3px 3px 8px rgba(13,39,80,0.14),inset -2px -2px 6px rgba(255,255,255,0.85)':'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)',color:replyMode==='reply'?T.violetBright:T.text1,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s',fontFamily:T.font,whiteSpace:'nowrap' }}
+          style={{ display:'flex',alignItems:'center',gap:6,padding:'7px 16px',borderRadius:20,border:'none',background:replyMode==='reply'?'inset':'#ffffff',boxShadow:replyMode==='reply'?'inset 3px 3px 8px rgba(13,39,80,0.14),inset -2px -2px 6px rgba(255,255,255,0.85)':'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)',color:replyMode==='reply'?T.violetBright:T.text1,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s',fontFamily:T.font,whiteSpace:'nowrap' }}
           onMouseEnter={e=>{if(replyMode!=='reply'){e.currentTarget.style.boxShadow='8px 8px 20px rgba(13,39,80,0.17),-5px -5px 14px rgba(255,255,255,0.95)';e.currentTarget.style.color=T.violetBright;}}}
           onMouseLeave={e=>{if(replyMode!=='reply'){e.currentTarget.style.boxShadow='6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)';e.currentTarget.style.color=T.text1;}}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
@@ -538,7 +637,7 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
           {icon:<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,label:'Important'},
         ].map(({icon,label})=>(
           <button key={label} title={label}
-            style={{ display:'flex',alignItems:'center',justifyContent:'center',width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f3',color:T.text2,cursor:'pointer',transition:'all 0.15s',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)' }}
+            style={{ display:'flex',alignItems:'center',justifyContent:'center',width:36,height:36,borderRadius:'50%',border:'none',background:'#ffffff',color:T.text2,cursor:'pointer',transition:'all 0.15s',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)' }}
             onMouseEnter={e=>{e.currentTarget.style.boxShadow='8px 8px 20px rgba(13,39,80,0.17),-5px -5px 14px rgba(255,255,255,0.95)';e.currentTarget.style.color=T.text0;}}
             onMouseLeave={e=>{e.currentTarget.style.boxShadow='6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)';e.currentTarget.style.color=T.text2;}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
@@ -549,14 +648,14 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
 
         {/* Outlook badge */}
         {isOutlookEmail && (
-          <div style={{ display:'flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#f0f0f3',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)',color:'#2563eb',fontSize:11.5,fontWeight:700,fontFamily:T.font,letterSpacing:'0.03em' }}>
+          <div style={{ display:'flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#ffffff',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgb(255, 255, 255)',color:'#2563eb',fontSize:11.5,fontWeight:700,fontFamily:T.font,letterSpacing:'0.03em' }}>
             <div style={{ width:6,height:6,borderRadius:'50%',background:'#2563eb',boxShadow:'0 0 6px rgba(37,99,235,0.5)' }}/>Outlook
           </div>
         )}
 
         {/* Status badge */}
         {emailStatus && (
-          <div style={{ display:'flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,background:'#f0f0f3',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)',color:emailStatus.color,fontSize:11.5,fontWeight:700,flexShrink:0,fontFamily:T.font,letterSpacing:'0.03em' }}>
+          <div style={{ display:'flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,background:'#ffffff',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)',color:emailStatus.color,fontSize:11.5,fontWeight:700,flexShrink:0,fontFamily:T.font,letterSpacing:'0.03em' }}>
             <span style={{ width:6,height:6,borderRadius:'50%',background:emailStatus.color,display:'inline-block',boxShadow:`0 0 6px ${emailStatus.color}80` }}/>{emailStatus.label}
           </div>
         )}
@@ -589,7 +688,7 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
 
           return (
             <div style={{ marginBottom:0 }}>
-              <div style={{ display:'flex',alignItems:'center',gap:14,padding:'16px 20px',borderRadius:0,background:'#f0f0f3',boxShadow:`0 4px 16px rgba(13,39,80,0.12)` }}>
+              <div style={{ display:'flex',alignItems:'center',gap:14,padding:'16px 20px',borderRadius:0,background:'#ffffff',boxShadow:`0 4px 16px rgba(13,39,80,0.12)` }}>
                 <div style={{ width:42,height:42,borderRadius:14,flexShrink:0,background:avatarColor(shown[0]||''),display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:700,color:'#fff',fontFamily:T.font,boxShadow:'4px 4px 10px rgba(13,39,80,0.15), -3px -3px 8px rgba(255,255,255,0.8)' }}>
                   {initials(shown[0]||'')}
                 </div>

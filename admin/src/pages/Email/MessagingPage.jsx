@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import "./MessagingPage.css";
-import MessageSidebar from "./MessageSidebar";
+import MessageSidebar, { MessageNavSidebar, MessageInboxPanel } from "./MessageSidebar";
 import EmailDetail from "./EmailDetail";
 import ComposePanel from "./ComposePanel";
 import ContextMenu from "./ContextMenu";
@@ -10,7 +10,7 @@ import { Clock, AlertTriangle, CheckCircle, RefreshCw, Wifi, WifiOff, X, Mail } 
 
 /* ─── Design Tokens ─────────────────────────────────────────────────────────── */
 const T = {
-  bg0:          '#f7f8fc',
+  bg0:          '#ffffff',
   bg1:          '#ffffff',
   bg2:          '#f0f2f7',
   bg3:          '#e6e9f0',
@@ -275,7 +275,7 @@ const OutlookSyncBar = ({ outlookInfo, onSync, syncing }) => {
       {/* Sync button */}
       <button onClick={onSync} disabled={syncing} style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        background: '#f0f0f3',
+        background: '#ffffff',
         border: 'none',
         boxShadow: syncing
           ? 'inset 3px 3px 8px rgba(13,39,80,0.12), inset -3px -3px 8px rgba(255,255,255,0.85)'
@@ -748,13 +748,24 @@ export default function MessagingPage() {
 
       {/* ── Main layout ── */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <MessageSidebar
-          activeTab={activeTab}           setActiveTab={setActiveTab}
-          msgList={msgList}               selectedMsg={selectedMsg}
-          composeMode={composeMode}       onSelectMsg={handleSelectMsg}
-          onCompose={handleCompose}       onContextMenu={handleContextMenu}
+        {/* Left nav: navigation links + labels */}
+        <MessageNavSidebar
+          activeNavKey={activeTab}
+          setActiveNavKey={setActiveTab}
+          onCompose={handleCompose}
           mobileSidebarOpen={mobileSidebarOpen}
-          outlookConnected={outlookStatus === 'connected'}
+        />
+
+        {/* Inbox panel: message list, search, filters */}
+        <MessageInboxPanel
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          msgList={msgList}
+          selectedMsg={selectedMsg}
+          composeMode={composeMode}
+          onSelectMsg={handleSelectMsg}
+          onCompose={handleCompose}
+          onContextMenu={handleContextMenu}
         />
 
         {/* ── Main content ── */}

@@ -41,7 +41,7 @@ import './Layout.css';
 //  NEUMORPHIC DESIGN TOKENS
 // ─────────────────────────────────────────────
 const NEU = {
-  bg:          '#f0f0f3',
+  bg:          '#ffffff',
   bgCard:      '#ffffff',
   bgDark:      '#16171c',
   bgCardDark:  '#1e2028',
@@ -148,7 +148,7 @@ function NotifItem({ notif, darkMode, onRead, onNavigate }) {
         <span style={{
           position: 'absolute', bottom: -3, right: -3,
           width: 16, height: 16, borderRadius: '50%',
-          background: darkMode ? '#16171c' : '#f0f0f3',
+          background: darkMode ? '#16171c' : '#ffffff',
           boxShadow: darkMode
             ? '2px 2px 5px rgba(0,0,0,0.5), -1px -1px 3px rgba(255,255,255,0.04)'
             : '2px 2px 5px rgba(13,39,80,0.15), -1px -1px 3px rgba(255,255,255,0.9)',

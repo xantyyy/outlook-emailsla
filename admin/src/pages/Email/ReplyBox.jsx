@@ -4,11 +4,11 @@ import FormattingToolbar from "./FormattingToolbar";
 import BottomToolBtn from "./BottomToolBtn";
 
 const T = {
-  bg0:      '#f0f0f3',
-  bg1:      '#f0f0f3',
+  bg0:      '#ffffff',
+  bg1:      '#fdfdfd',
   bg2:      '#e8e8ec',
   bg3:      '#dcdce2',
-  surface:  '#f0f0f3',
+  surface:  '#ffffff',
   border:   'rgba(13,39,80,0.07)',
   borderHi: 'rgba(13,39,80,0.13)',
   text0:    '#0f172a',

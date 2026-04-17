@@ -10,7 +10,7 @@
    LIGHT MODE — CSS VARIABLES
    ══════════════════════════════════════════════════ */
 :root {
-  --bg-app:         #F1F5F9;
+  --bg-app:         #FFFFFF;
   --bg-sidebar:     #FFFFFF;
   --bg-header:      #FFFFFF;
   --bg-nav-hover:   #EEF2F7;
