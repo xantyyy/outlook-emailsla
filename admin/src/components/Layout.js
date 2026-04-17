@@ -36,7 +36,6 @@ import {
   MailOpen,
 } from 'lucide-react';
 import './Layout.css';
-import useIdleLogout from '../hooks/useIdleLogout';
 
 // ─────────────────────────────────────────────
 //  NEUMORPHIC DESIGN TOKENS
@@ -667,7 +666,6 @@ function LogoutModal({ darkMode, onConfirm, onCancel }) {
 //  LAYOUT — neumorphic sidebar + header
 // ─────────────────────────────────────────────
 const Layout = ({ children }) => {
-  useIdleLogout();
   const [sidebarOpen, setSidebarOpen]         = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [adminData, setAdminData] = useState(() => {
@@ -711,11 +709,8 @@ const Layout = ({ children }) => {
   const FULL_ACCESS_ROLES = ['Super Admin', 'Innovation'];
   const isFullAccess      = FULL_ACCESS_ROLES.includes(userRole);
 
-  const commonItems      = [{ path: '/admin/archive', icon: Archive, label: 'Archive' }];
+  const commonItems      = [];
   const fullTopMenuItems = [
-    { path: '/admin/dashboard',       icon: LayoutDashboard, label: 'Dashboard'     },
-    { path: '/admin/outlook-reports', icon: BarChart3,       label: 'Pending Bugs'  },
-    { path: '/admin/bug-reports',     icon: Bug,             label: 'Bug Reports'   },
     { path: '/admin/messaging',       icon: MessageCircle,   label: 'Messaging'     },
     { path: '/admin/user-creation',   icon: UserPlus,        label: 'User Creation' },
   ];
@@ -1090,57 +1085,7 @@ const Layout = ({ children }) => {
             <NavPill key={path} path={path} icon={icon} label={label} />
           ))}
 
-          {/* ── SLA accordion ── */}
-          {showSLA && (
-            <div>
-              <AccordionTrigger
-                icon={ShieldCheck}
-                label="SLA Monitoring"
-                isOpen={slaOpen}
-                active={isSlaActive}
-                onToggle={() => {
-                  if (!sidebarOpen) { setSidebarOpen(true); setSlaOpen(true); }
-                  else setSlaOpen(o => !o);
-                }}
-              />
-              {sidebarOpen && (
-                <div className={`neu-acc-body ${slaOpen ? 'open' : ''}`}>
-                  {slaSubItems.map(({ path, icon, label }) => (
-                    <NavPill key={path} path={path} icon={icon} label={label} depth={1} />
-                  ))}
-
-                  {/* dept logs sub-accordion */}
-                  <div>
-                    <button
-                      onClick={() => setDeptLogsOpen(o => !o)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '8px 14px 8px 22px',
-                        borderRadius: 12, border: 'none', width: 'calc(100% - 16px)',
-                        margin: '1px 8px', cursor: 'pointer',
-                        background: isDeptLogsActive ? (darkMode ? `${accent}18` : `${accent}0d`) : 'transparent',
-                        boxShadow: isDeptLogsActive ? shadowIn : 'none',
-                        color: isDeptLogsActive ? (darkMode ? '#fff' : accent) : textSec,
-                        fontSize: 12, fontWeight: isDeptLogsActive ? 600 : 500,
-                        fontFamily: NEU.font, transition: 'background 0.15s, color 0.15s',
-                        borderLeft: isDeptLogsActive ? `3px solid ${accent}` : '3px solid transparent',
-                      }}
-                    >
-                      <Building2 size={14} style={{ color: isDeptLogsActive ? accent : textMut, flexShrink: 0 }} />
-                      <span style={{ flex: 1, textAlign: 'left' }}>Department Overview</span>
-                      <ChevronDown size={12} style={{ transform: deptLogsOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }} />
-                    </button>
-                    <div className={`neu-acc-body ${deptLogsOpen ? 'open' : ''}`}>
-                      {deptLogsChildren.map(({ path, icon, label }) => (
-                        <NavPill key={path} path={path} icon={icon} label={label} depth={2} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
+          
           {bottomMenuItems.map(({ path, icon, label }) => (
             <NavPill key={path} path={path} icon={icon} label={label} />
           ))}

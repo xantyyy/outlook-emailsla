@@ -13,42 +13,50 @@ const ROLE_ALLOWED_PATHS = {
   'Audit and Compliance': [
     '/admin/messaging',
     '/admin/settings',
-    '/admin/sla',
+    '/admin/user-creation',
+    '/admin/activity-logs',
   ],
   'Human Resource': [
     '/admin/messaging',
     '/admin/settings',
-    '/admin/sla',
+    '/admin/user-creation',
+    '/admin/activity-logs',
   ],
   'Accounting': [
     '/admin/messaging',
     '/admin/settings',
-    '/admin/sla',
+    '/admin/user-creation',
+    '/admin/activity-logs',
   ],
   'Recruitment': [
     '/admin/messaging',
     '/admin/settings',
-    '/admin/sla',
+    '/admin/user-creation',
+    '/admin/activity-logs',
   ],
   'Creatives': [
     '/admin/messaging',
     '/admin/settings',
-    '/admin/sla',
+    '/admin/user-creation',
+    '/admin/activity-logs',
   ],
   'Marketing': [
     '/admin/messaging',
     '/admin/settings',
-    '/admin/sla',
+    '/admin/user-creation',
+    '/admin/activity-logs',
   ],
   'Operations': [
     '/admin/messaging',
     '/admin/settings',
-    '/admin/sla',
+    '/admin/user-creation',
+    '/admin/activity-logs',
   ],
   'User': [
     '/admin/messaging',
     '/admin/settings',
-    '/admin/sla',
+    '/admin/user-creation',
+    '/admin/activity-logs',
   ],
 };
 

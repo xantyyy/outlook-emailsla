@@ -220,10 +220,7 @@ const Login = () => {
       rememberMe
         ? localStorage.setItem('rememberMe', 'true')
         : localStorage.removeItem('rememberMe');
-      const role = response.admin?.role || '';
-      navigate(['Super Admin', 'Innovation'].includes(role)
-        ? '/admin/dashboard'
-        : '/admin/messaging');
+      navigate('/admin/messaging');
     } catch (err) {
       console.error('Login error:', err);
       resetCaptcha();
