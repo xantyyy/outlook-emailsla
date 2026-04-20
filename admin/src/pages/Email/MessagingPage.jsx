@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { useQueryClient } from '@tanstack/react-query';
 import "./MessagingPage.css";
 import MessageSidebar, { MessageNavSidebar, MessageInboxPanel } from "./MessageSidebar";
 import EmailDetail from "./EmailDetail";
 import ComposePanel from "./ComposePanel";
 import ContextMenu from "./ContextMenu";
 import api from "../../services/api";
+import { useFolderMessages, TAB_TO_FOLDER, useNewMessageNotifier } from "../../hooks/useFolderMessages";
+import { usePrefetchThread } from "../../hooks/useThread";
 import { Clock, AlertTriangle, CheckCircle, RefreshCw, Wifi, WifiOff, X, Mail } from "lucide-react";
 
 /* ─── Design Tokens ─────────────────────────────────────────────────────────── */
@@ -330,11 +333,11 @@ export default function MessagingPage() {
   const location       = useLocation();
   const incomingTicket = location.state?.ticket ?? null;
 
+  const queryClient = useQueryClient();
   const [activeTab,          setActiveTab]         = useState("all");
   const [selectedMsg,        setSelectedMsg]       = useState(null);
-  const [msgList,            setMsgList]           = useState([]);
   const [contextMenu,        setContextMenu]       = useState(null);
-  const [composeMode,        setComposeMode]       = useState(false);
+  const [composeMode,        setComposeMode]        = useState(false);
   const [composeInitial,     setComposeInitial]    = useState(null);
   const [mobileSidebarOpen,  setMobileSidebarOpen] = useState(false);
   const [activeTicket,       setActiveTicket]      = useState(incomingTicket);
@@ -345,8 +348,68 @@ export default function MessagingPage() {
   const [syncingOL,     setSyncingOL]     = useState(false);
   const [syncError,     setSyncError]     = useState('');
 
-  const syncingRef = useRef(false);
+  const folderId = TAB_TO_FOLDER[activeTab] ?? 'inbox';
   const contextRef = useRef(null);
+  const syncingRef = useRef(false);
+
+  const {
+    data:       msgList = [],
+    isLoading:  msgLoading,
+    isFetching: msgFetching,
+    isError:    msgError,
+    refetch:    refetchMessages,
+  } = useFolderMessages(folderId, {
+    enabled:  outlookStatus === 'connected',
+    isActive: true,
+  });
+
+  // ── Per-folder counts for the nav sidebar (fetched once, not polled aggressively) ──
+  const { data: inboxMsgs    = [] } = useFolderMessages('inbox',       { enabled: outlookStatus === 'connected', isActive: false });
+  const { data: sentMsgs     = [] } = useFolderMessages('sentitems',   { enabled: outlookStatus === 'connected', isActive: false });
+  const { data: draftsMsgs   = [] } = useFolderMessages('drafts',      { enabled: outlookStatus === 'connected', isActive: false });
+  const { data: spamMsgs     = [] } = useFolderMessages('junkemail',   { enabled: outlookStatus === 'connected', isActive: false });
+  const { data: trashMsgs    = [] } = useFolderMessages('deleteditems',{ enabled: outlookStatus === 'connected', isActive: false });
+
+  const folderCounts = {
+    inbox:      inboxMsgs.length     || null,
+    sent:       sentMsgs.length      || null,
+    all:        inboxMsgs.length     || null,
+    drafts:     draftsMsgs.length    || null,
+    spam:       spamMsgs.length      || null,
+    trash:      trashMsgs.length     || null,
+    favourites: msgList.filter(m => m.starred).length || null,
+  };
+
+  /* ── New-message notification trackers (per folder) ── */
+  const isOLConnected = outlookStatus === 'connected';
+  const { newCount: inboxNewCount, clearNew: clearInboxNew } = useNewMessageNotifier('inbox',       isOLConnected);
+  const { newCount: spamNewCount,  clearNew: clearSpamNew  } = useNewMessageNotifier('junkemail',   isOLConnected);
+
+  // Map folder key → clearNew handler (extend for other folders as needed)
+  const newMsgCounts = {
+    inbox: inboxNewCount,
+    all:   inboxNewCount,   // "All Mail" mirrors inbox
+    spam:  spamNewCount,
+  };
+
+  const handleClearNew = (key) => {
+    if (key === 'inbox' || key === 'all') clearInboxNew();
+    if (key === 'spam')                   clearSpamNew();
+  };
+
+  const prefetchThread = usePrefetchThread(outlookStatus === 'connected');
+
+  useEffect(() => {
+    if (!msgList.length) {
+      setSelectedMsg(null);
+      return;
+    }
+
+    setSelectedMsg(prev => {
+      if (prev && msgList.some(m => m.id === prev.id)) return prev;
+      return msgList[0];
+    });
+  }, [msgList]);
 
   /* ── Outlook status ── */
   const checkOutlookStatus = useCallback(async () => {
@@ -365,60 +428,18 @@ export default function MessagingPage() {
   useEffect(() => { checkOutlookStatus(); }, [checkOutlookStatus]);
 
   /* ── Sync ── */
-  const syncOutlookEmails = useCallback(async () => {
-    if (syncingRef.current) return;
-    syncingRef.current = true; setSyncingOL(true); setSyncError('');
+  const handleManualSync = useCallback(async () => {
+    if (syncingOL) return;
+    setSyncError(''); setSyncingOL(true);
     try {
-      const res    = await api.get('/outlook/emails?top=50&folder=inbox');
-      const mapped = (res.data.emails || []).map(mapGraphEmail);
-
-      // Sort oldest→newest so the original email always comes first per conversation
-      const sorted = [...mapped].sort((a, b) =>
-        new Date(a.receivedAt || 0).getTime() - new Date(b.receivedAt || 0).getTime()
-      );
-
-      // Deduplicate by conversationId — keep only ONE entry per conversation (the oldest).
-      // The full thread is loaded on demand via fetchThread in EmailDetail.
-      // This prevents reply emails from appearing as separate inbox rows.
-      const seenConvIds = new Set();
-      const deduped = sorted.filter(m => {
-        const key = m.conversationId || m.id;
-        if (seenConvIds.has(key)) return false;
-        seenConvIds.add(key);
-        return true;
-      });
-
-      // Re-sort deduped list by most-recent activity (latest receivedAt in conversation)
-      // so threads with new replies bubble up to the top
-      const convLatest = new Map();
-      sorted.forEach(m => {
-        const key = m.conversationId || m.id;
-        const t = new Date(m.receivedAt || 0).getTime();
-        if (!convLatest.has(key) || t > convLatest.get(key)) convLatest.set(key, t);
-      });
-      deduped.sort((a, b) => {
-        const ta = convLatest.get(a.conversationId || a.id) || 0;
-        const tb = convLatest.get(b.conversationId || b.id) || 0;
-        return tb - ta; // newest conversation first
-      });
-
-      setMsgList(deduped);
-
-      // Auto-select: keep previous if still present, else open top conversation
-      setSelectedMsg(prev => {
-        if (prev && deduped.find(m => m.id === prev.id)) return prev;
-        return deduped[0] || null;
-      });
-      setOutlookInfo(prev => prev ? { ...prev, lastSyncAt: new Date().toISOString() } : prev);
-    } catch(err) {
-      if (err.response?.status === 403) {
-        setOutlookStatus('disconnected'); setMsgList([]);
-        setSyncError('Outlook session expired. Please reconnect.');
-      } else {
-        setSyncError(err.response?.data?.message || err.message);
-      }
-    } finally { syncingRef.current = false; setSyncingOL(false); }
-  }, []);
+      await queryClient.invalidateQueries(['messages']);
+      await queryClient.invalidateQueries(['thread']);
+    } catch (err) {
+      setSyncError(err?.response?.data?.message || err.message || 'Sync failed');
+    } finally {
+      setSyncingOL(false);
+    }
+  }, [queryClient, syncingOL]);
 
   useEffect(() => {
     const params   = new URLSearchParams(window.location.search);
@@ -428,21 +449,19 @@ export default function MessagingPage() {
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(async () => {
         const connected = await checkOutlookStatus();
-        if (connected) syncOutlookEmails();
+        if (connected) await handleManualSync();
       }, 600);
     } else if (errParam) {
       window.history.replaceState({}, '', window.location.pathname);
       setSyncError(`Outlook connection failed: ${decodeURIComponent(errParam)}`);
       setOutlookStatus('disconnected');
     }
-  }, [checkOutlookStatus, syncOutlookEmails]);
+  }, [checkOutlookStatus, handleManualSync]);
 
   useEffect(() => {
     if (outlookStatus !== 'connected') return;
-    syncOutlookEmails();
-    const id = setInterval(syncOutlookEmails, 2 * 60 * 1000);
-    return () => clearInterval(id);
-  }, [outlookStatus, syncOutlookEmails]);
+    handleManualSync();
+  }, [outlookStatus, handleManualSync]);
 
   /* ── Connect / Disconnect ── */
   const handleConnectOutlook = async () => {
@@ -459,7 +478,7 @@ export default function MessagingPage() {
 
   const handleDisconnectOutlook = async () => {
     try { await api.delete('/outlook/disconnect'); } catch {}
-    setOutlookStatus('disconnected'); setOutlookInfo(null); setMsgList([]); setSelectedMsg(null);
+    setOutlookStatus('disconnected'); setOutlookInfo(null); setSelectedMsg(null);
   };
 
   /* ── Misc effects ── */
@@ -486,14 +505,16 @@ export default function MessagingPage() {
     if (action === "delete") {
       if (msg.graphId && outlookStatus === 'connected')
         api.delete(`/outlook/emails/${msg.graphId}`).catch(() => {});
-      setMsgList(prev => prev.filter(m => m.id !== msg.id));
+      queryClient.setQueryData(['messages', folderId], prev => prev ? prev.filter(m => m.id !== msg.id) : prev);
       if (selectedMsg?.id === msg.id) setSelectedMsg(null);
     } else if (action === "markUnread") {
       if (msg.graphId && outlookStatus === 'connected')
         api.patch(`/outlook/emails/${msg.graphId}/read`, { isRead: !msg.read }).catch(() => {});
-      setMsgList(prev => prev.map(m => m.id === msg.id ? { ...m, read: !m.read } : m));
+      queryClient.setQueryData(['messages', folderId], prev => prev ? prev.map(m => m.id === msg.id ? { ...m, read: !m.read } : m) : prev);
+      if (selectedMsg?.id === msg.id) setSelectedMsg(prev => prev ? { ...prev, read: !prev.read } : prev);
     } else if (action === "star") {
-      setMsgList(prev => prev.map(m => m.id === msg.id ? { ...m, starred: !m.starred } : m));
+      queryClient.setQueryData(['messages', folderId], prev => prev ? prev.map(m => m.id === msg.id ? { ...m, starred: !m.starred } : m) : prev);
+      if (selectedMsg?.id === msg.id) setSelectedMsg(prev => prev ? { ...prev, starred: !prev.starred } : prev);
     } else if (action === "open" || action === "reply") {
       setSelectedMsg(msg); setComposeMode(false); setComposeInitial(null);
     }
@@ -504,12 +525,12 @@ export default function MessagingPage() {
     setSelectedMsg(msg); setComposeMode(false); setComposeInitial(null); setMobileSidebarOpen(false);
     if (msg.graphId && !msg.read && outlookStatus === 'connected') {
       api.patch(`/outlook/emails/${msg.graphId}/read`, { isRead: true }).catch(() => {});
-      setMsgList(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m));
+      queryClient.setQueryData(['messages', folderId], prev => prev ? prev.map(m => m.id === msg.id ? { ...m, read: true } : m) : prev);
     }
   };
 
   const handleStatusChange = (msgId, newStatus) => {
-    setMsgList(prev  => prev.map(m  => m.id  === msgId ? { ...m,  status: newStatus } : m));
+    queryClient.setQueryData(['messages', folderId], prev => prev ? prev.map(m => m.id === msgId ? { ...m, status: newStatus } : m) : prev);
     setSelectedMsg(prev => prev?.id === msgId ? { ...prev, status: newStatus } : prev);
   };
 
@@ -740,7 +761,7 @@ export default function MessagingPage() {
       {outlookStatus === 'connected' && (
         <OutlookSyncBar
           outlookInfo={outlookInfo}
-          onSync={syncOutlookEmails}
+          onSync={handleManualSync}
           syncing={syncingOL}
           onDisconnect={handleDisconnectOutlook}
         />
@@ -754,6 +775,9 @@ export default function MessagingPage() {
           setActiveNavKey={setActiveTab}
           onCompose={handleCompose}
           mobileSidebarOpen={mobileSidebarOpen}
+          folderCounts={folderCounts}
+          newMsgCounts={newMsgCounts}
+          onClearNew={handleClearNew}
         />
 
         {/* Inbox panel: message list, search, filters */}
@@ -812,7 +836,7 @@ export default function MessagingPage() {
               onExpandToCompose={handleExpandToCompose}
               outlookConnected={outlookStatus === 'connected'}
               onStatusChange={handleStatusChange}
-              onSyncEmails={syncOutlookEmails}
+              onSyncEmails={handleManualSync}
             />
           )}
         </main>

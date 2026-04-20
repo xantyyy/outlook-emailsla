@@ -325,12 +325,38 @@ async function forwardMessage(userId, messageId, toRecipients, comment = '') {
 
 /* ─────────────────────────────────────────────────────────────
    14. Fetch conversation thread
+   
+   CHANGED: Now searches ALL messages via /me/messages (mailbox-wide)
+   instead of only inbox + sentitems. This ensures thread messages
+   in archive, deleted items, or any other folder are included.
+   Falls back to per-folder search if mailbox-wide search fails.
+   Supports fetching up to 20 threads via batch conversationIds.
 ───────────────────────────────────────────────────────────── */
 async function fetchConversationThread(userId, conversationId, excludeId) {
   const accessToken = await getValidAccessToken(userId);
 
-  const SELECT = 'id,subject,bodyPreview,body,from,toRecipients,ccRecipients,receivedDateTime,sentDateTime,isRead,isDraft,flag';
+  const SELECT = 'id,subject,bodyPreview,body,from,toRecipients,ccRecipients,receivedDateTime,sentDateTime,isRead,isDraft,flag,conversationId';
 
+  // ── Strategy 1: mailbox-wide search (finds messages in any folder) ──
+  // NOTE: $orderby cannot be combined with $filter on /me/messages — Graph returns 400.
+  // We sort manually after fetching instead.
+  const fetchMailboxWide = async (convId) => {
+    const params = new URLSearchParams();
+    params.set('$filter', `conversationId eq '${convId}'`);
+    params.set('$select', SELECT);
+    params.set('$top',    '50');
+
+    const { data } = await axios.get(`${GRAPH}/me/messages?${params.toString()}`, {
+      headers: {
+        Authorization:    `Bearer ${accessToken}`,
+        ConsistencyLevel: 'eventual',
+        Prefer:           'outlook.body-content-type="html"',
+      },
+    });
+    return data.value || [];
+  };
+
+  // ── Strategy 2: fallback — search inbox + sentitems + archive + deleted ──
   const fetchFolder = async (folder) => {
     const params = new URLSearchParams();
     params.set('$filter', `conversationId eq '${conversationId}'`);
@@ -346,22 +372,59 @@ async function fetchConversationThread(userId, conversationId, excludeId) {
     return data.value || [];
   };
 
-  const [inboxMsgs, sentMsgs] = await Promise.all([
-    fetchFolder('inbox').catch(() => []),
-    fetchFolder('sentitems').catch(() => []),
-  ]);
+  let allMessages = [];
 
+  try {
+    allMessages = await fetchMailboxWide(conversationId);
+  } catch (err) {
+    console.warn('[fetchConversationThread] Mailbox-wide search failed, falling back to folder search:', err.message);
+    const [inboxMsgs, sentMsgs, archiveMsgs, deletedMsgs] = await Promise.all([
+      fetchFolder('inbox').catch(() => []),
+      fetchFolder('sentitems').catch(() => []),
+      fetchFolder('archive').catch(() => []),
+      fetchFolder('deleteditems').catch(() => []),
+    ]);
+    allMessages = [...inboxMsgs, ...sentMsgs, ...archiveMsgs, ...deletedMsgs];
+  }
+
+  // Deduplicate, exclude the selected message, and exclude drafts
   const seen = new Set();
-  const all  = [...inboxMsgs, ...sentMsgs].filter(m => {
+  const filtered = allMessages.filter(m => {
     if (seen.has(m.id)) return false;
     seen.add(m.id);
     return m.id !== excludeId && !m.isDraft;
   });
 
-  return all.sort((a, b) =>
+  return filtered.sort((a, b) =>
     new Date(a.receivedDateTime || a.sentDateTime) -
     new Date(b.receivedDateTime || b.sentDateTime)
   );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   14b. Fetch multiple conversation threads in parallel (up to 20)
+   
+   NEW: Accepts an array of { conversationId, excludeId } objects
+   and returns a map of conversationId → thread messages.
+   Used by the batch thread prefetch in the frontend.
+───────────────────────────────────────────────────────────── */
+async function fetchMultipleThreads(userId, requests) {
+  // Cap at 20 to avoid overwhelming Graph API
+  const capped = requests.slice(0, 20);
+
+  const results = await Promise.allSettled(
+    capped.map(({ conversationId, excludeId }) =>
+      fetchConversationThread(userId, conversationId, excludeId)
+    )
+  );
+
+  const map = {};
+  capped.forEach(({ conversationId }, i) => {
+    const r = results[i];
+    map[conversationId] = r.status === 'fulfilled' ? r.value : [];
+  });
+
+  return map;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -383,7 +446,7 @@ function toAddrObj(r) {
 
 module.exports = {
   buildAuthUrl,
-  consumeAuthState,       // ← NEW export
+  consumeAuthState,
   exchangeCodeForTokens,
   getValidAccessToken,
   getUserProfile,
@@ -397,4 +460,5 @@ module.exports = {
   forwardMessage,
   listFolders,
   fetchConversationThread,
+  fetchMultipleThreads,   // ← NEW
 };

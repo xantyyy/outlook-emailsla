@@ -25,7 +25,7 @@ const T = {
 
 const NAV_ITEMS = [
   {
-    key: 'inbox', label: 'Inbox', count: 382,
+    key: 'inbox', label: 'Inbox',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
@@ -34,7 +34,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'sent', label: 'Sent Mails', count: 129,
+    key: 'sent', label: 'Sent Mails',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -42,7 +42,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'all', label: 'All Mail', count: 20,
+    key: 'all', label: 'All Mail',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="4" width="20" height="16" rx="2"/>
@@ -51,7 +51,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'drafts', label: 'Drafts', count: 20,
+    key: 'drafts', label: 'Drafts',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -60,7 +60,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'favourites', label: 'Favourites', count: 12,
+    key: 'favourites', label: 'Favourites',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -68,7 +68,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'spam', label: 'Spam', count: null,
+    key: 'spam', label: 'Spam',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -77,7 +77,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'trash', label: 'Trash', count: 10,
+    key: 'trash', label: 'Trash',
     icon: (
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
@@ -229,9 +229,98 @@ function ConvGroup({ group, selectedMsg, composeMode, onSelectMsg, onContextMenu
 }
 
 /* ══════════════════════════════════════════════════════════════════
+   NEW MESSAGE NOTIFICATION BADGE
+   ─────────────────────────────
+   A small animated red pill shown next to a nav item when new
+   messages have arrived since the user last viewed that folder.
+
+   Props:
+     count  {number}  — number of new messages (0 = hidden)
+     pulse  {boolean} — whether to animate (true by default)
+══════════════════════════════════════════════════════════════════ */
+export function NewMsgBadge({ count = 0, pulse = true }) {
+  if (!count) return null;
+  return (
+    <>
+      <style>{`
+        @keyframes nmb-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.7; transform: scale(1.15); }
+        }
+        @keyframes nmb-pop {
+          0%   { transform: scale(0.5); opacity: 0; }
+          70%  { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(1);   opacity: 1; }
+        }
+        .nmb-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 18px;
+          height: 18px;
+          border-radius: 9px;
+          padding: 0 5px;
+          background: #B90000;
+          color: #fff;
+          font-size: 10px;
+          font-weight: 700;
+          font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+          letter-spacing: 0;
+          line-height: 1;
+          flex-shrink: 0;
+          animation: nmb-pop 0.28s cubic-bezier(.34,1.56,.64,1) both;
+          box-shadow: 0 2px 8px rgba(185,0,0,0.40);
+        }
+        .nmb-badge--pulse {
+          animation: nmb-pop 0.28s cubic-bezier(.34,1.56,.64,1) both,
+                     nmb-pulse 2.2s ease-in-out 0.3s infinite;
+        }
+      `}</style>
+      <span className={`nmb-badge${pulse ? ' nmb-badge--pulse' : ''}`}>
+        {count > 99 ? '99+' : count}
+      </span>
+    </>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
    LEFT NAV SIDEBAR
 ══════════════════════════════════════════════════════════════════ */
-export function MessageNavSidebar({ activeNavKey, setActiveNavKey, onCompose, mobileSidebarOpen }) {
+
+/**
+ * MessageNavSidebar
+ *
+ * Props (new additions marked with ★):
+ *   activeNavKey       {string}    — currently active tab key
+ *   setActiveNavKey    {fn}        — setter for active tab
+ *   onCompose          {fn}        — open compose panel
+ *   mobileSidebarOpen  {boolean}   — show/hide on mobile
+ *   folderCounts       {object}    — { inbox: N, sent: N, ... }
+ * ★ newMsgCounts       {object}    — { inbox: N, spam: N, ... } from useNewMessageNotifier
+ * ★ onClearNew         {fn}        — called with (folderKey) when user clicks a nav item
+ *
+ * Usage in MessagingPage:
+ *   const { newCount: inboxNew, clearNew: clearInboxNew } =
+ *     useNewMessageNotifier('inbox', outlookConnected);
+ *
+ *   <MessageNavSidebar
+ *     ...
+ *     newMsgCounts={{ inbox: inboxNew, spam: spamNew }}
+ *     onClearNew={key => {
+ *       if (key === 'inbox') clearInboxNew();
+ *       if (key === 'spam')  clearSpamNew();
+ *     }}
+ *   />
+ */
+export function MessageNavSidebar({
+  activeNavKey,
+  setActiveNavKey,
+  onCompose,
+  mobileSidebarOpen,
+  folderCounts  = {},
+  newMsgCounts  = {},   // ★ NEW: { inbox: 3, spam: 1, ... }
+  onClearNew    = () => {},  // ★ NEW: called with folder key on click
+}) {
   const adminData = (() => {
     try { return JSON.parse(localStorage.getItem('adminData') || '{}'); } catch { return {}; }
   })();
@@ -242,6 +331,11 @@ export function MessageNavSidebar({ activeNavKey, setActiveNavKey, onCompose, mo
     return names.length >= 2
       ? (names[0][0] + names[names.length - 1][0]).toUpperCase()
       : names[0][0].toUpperCase();
+  };
+
+  const handleNavClick = (key) => {
+    setActiveNavKey(key);
+    onClearNew(key);   // ★ clear new-message badge when user opens the folder
   };
 
   return (
@@ -332,11 +426,13 @@ export function MessageNavSidebar({ activeNavKey, setActiveNavKey, onCompose, mo
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NAV_ITEMS.map(item => {
-            const active = activeNavKey === item.key;
+            const active   = activeNavKey === item.key;
+            const count    = folderCounts[item.key] ?? null;
+            const newCount = newMsgCounts[item.key] ?? 0;  // ★ new messages count
             return (
               <button
                 key={item.key}
-                onClick={() => setActiveNavKey(item.key)}
+                onClick={() => handleNavClick(item.key)}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                   padding: '9px 12px', borderRadius: 10, border: 'none',
@@ -347,11 +443,36 @@ export function MessageNavSidebar({ activeNavKey, setActiveNavKey, onCompose, mo
                 onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = T.text0; } }}
                 onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text1; } }}
               >
-                <span style={{ color: active ? T.violet : T.text2, transition: 'color 0.15s', flexShrink: 0 }}>{item.icon}</span>
-                <span style={{ flex: 1, fontSize: 13, fontWeight: active ? 700 : 500, textAlign: 'left', letterSpacing: '-0.1px' }}>{item.label}</span>
-                {item.count != null && (
-                  <span style={{ fontSize: 11, fontWeight: 600, color: active ? T.violet : T.text2, minWidth: 20, textAlign: 'right' }}>{item.count}</span>
-                )}
+                {/* Icon — with a dot indicator when there are new messages */}
+                <span style={{ position: 'relative', color: active ? T.violet : T.text2, transition: 'color 0.15s', flexShrink: 0 }}>
+                  {item.icon}
+                  {/* ★ Small red dot on the icon when new messages exist */}
+                  {newCount > 0 && !active && (
+                    <span style={{
+                      position: 'absolute',
+                      top: -3, right: -3,
+                      width: 7, height: 7,
+                      borderRadius: '50%',
+                      background: '#B90000',
+                      border: '1.5px solid #fff',
+                      display: 'block',
+                    }}/>
+                  )}
+                </span>
+
+                {/* Label */}
+                <span style={{ flex: 1, fontSize: 13, fontWeight: active ? 700 : 500, textAlign: 'left', letterSpacing: '-0.1px' }}>
+                  {item.label}
+                </span>
+
+                {/* ★ New-message badge (takes priority over folder count) */}
+                {newCount > 0 ? (
+                  <NewMsgBadge count={newCount} pulse={!active} />
+                ) : count != null ? (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: active ? T.violet : T.text2, minWidth: 20, textAlign: 'right' }}>
+                    {count}
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -399,11 +520,32 @@ export function MessageNavSidebar({ activeNavKey, setActiveNavKey, onCompose, mo
 /* ══════════════════════════════════════════════════════════════════
    INBOX PANEL
 ══════════════════════════════════════════════════════════════════ */
+
+const FOLDER_META = {
+  inbox:      { label: 'Inbox',      showRecipient: false },
+  sent:       { label: 'Sent Mails', showRecipient: true  },
+  sentitems:  { label: 'Sent Mails', showRecipient: true  },
+  all:        { label: 'All Mail',   showRecipient: false },
+  drafts:     { label: 'Drafts',     showRecipient: true  },
+  favourites: { label: 'Favourites', showRecipient: false },
+  spam:       { label: 'Spam',       showRecipient: false },
+  trash:      { label: 'Trash',      showRecipient: false },
+};
+
 export function MessageInboxPanel({ activeTab, setActiveTab, msgList, selectedMsg, composeMode, onSelectMsg, onCompose, onContextMenu }) {
   const [searchVal, setSearchVal] = useState("");
   const [inboxTab,  setInboxTab]  = useState("All");
 
-  const filteredMessages = msgList.filter(m => {
+  const meta = FOLDER_META[activeTab] ?? { label: 'Inbox', showRecipient: false };
+
+  // For sent/drafts folders, show the recipient name instead of sender
+  const displayList = msgList.map(m => {
+    if (!meta.showRecipient) return m;
+    const recipientName = Array.isArray(m.to) && m.to.length > 0 ? m.to[0] : m.senderEmail || m.sender;
+    return { ...m, sender: recipientName ? `To: ${recipientName}` : m.sender };
+  });
+
+  const filteredMessages = displayList.filter(m => {
     const passesTab    = inboxTab === "Unread" ? !m.read : inboxTab === "Starred" ? m.starred : true;
     const passesSearch = !searchVal ||
       m.sender?.toLowerCase().includes(searchVal.toLowerCase()) ||
@@ -437,7 +579,7 @@ export function MessageInboxPanel({ activeTab, setActiveTab, msgList, selectedMs
       <div style={{ padding: '24px 20px 10px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: T.text0, margin: 0, fontFamily: T.font, letterSpacing: '-0.4px' }}>
-            Inbox
+            {meta.label}
           </h2>
           <button
             onClick={onCompose}
@@ -535,7 +677,13 @@ export function MessageInboxPanel({ activeTab, setActiveTab, msgList, selectedMs
    DEFAULT EXPORT — backward compat
 ══════════════════════════════════════════════════════════════════ */
 export default function MessageSidebar(props) {
-  const { activeTab, setActiveTab, msgList, selectedMsg, composeMode, onSelectMsg, onCompose, onContextMenu, mobileSidebarOpen } = props;
+  const {
+    activeTab, setActiveTab, msgList, selectedMsg,
+    composeMode, onSelectMsg, onCompose, onContextMenu,
+    mobileSidebarOpen,
+    newMsgCounts = {},
+    onClearNew   = () => {},
+  } = props;
   const [activeNavKey, setActiveNavKey] = useState('inbox');
 
   return (
@@ -545,6 +693,8 @@ export default function MessageSidebar(props) {
         setActiveNavKey={setActiveNavKey}
         onCompose={onCompose}
         mobileSidebarOpen={mobileSidebarOpen}
+        newMsgCounts={newMsgCounts}
+        onClearNew={onClearNew}
       />
       <MessageInboxPanel
         activeTab={activeTab}

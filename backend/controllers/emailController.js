@@ -1,5 +1,6 @@
 const axios = require('axios');
 const User  = require('../models/user');
+const outlookService = require('../services/outlookService');
 
 const MS_AUTH_URL  = 'https://login.microsoftonline.com/consumers/oauth2/v2.0';
 const MS_GRAPH_URL = 'https://graph.microsoft.com/v1.0';
@@ -265,6 +266,93 @@ exports.syncEmails = async (req, res) => {
 
     console.error('syncEmails error:', err.response?.data || err.message);
     res.status(500).json({ message: 'Failed to fetch emails from Outlook.', code: 'GRAPH_ERROR' });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/email/folders/:folderId/messages
+// Returns raw Graph messages for the requested folder.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.getFolderMessages = async (req, res) => {
+  try {
+    const { folderId } = req.params;
+    const top  = parseInt(req.query.top,  10) || 50;
+    const skip = parseInt(req.query.skip, 10) || 0;
+
+    if (!folderId) {
+      return res.status(400).json({ message: 'folderId is required' });
+    }
+
+    const emails = await outlookService.fetchEmails(req.user?._id || req.admin?._id, {
+      folder: folderId,
+      top,
+      skip,
+    });
+
+    return res.json({ emails });
+  } catch (err) {
+    if (err.message === 'OUTLOOK_NOT_CONNECTED' || err.message === 'NOT_CONNECTED') {
+      return res.status(403).json({ message: 'Outlook not connected' });
+    }
+    console.error('[getFolderMessages]', err.response?.data || err.message);
+    return res.status(500).json({ message: err.response?.data?.error?.message || err.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/email/messages/:msgId/thread?conversationId=...
+// Returns a conversation thread excluding the selected message.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.getThreadByMessageId = async (req, res) => {
+  try {
+    const { msgId } = req.params;
+    const { conversationId } = req.query;
+
+    if (!conversationId) {
+      return res.status(400).json({ message: 'conversationId query param is required' });
+    }
+
+    const thread = await outlookService.fetchConversationThread(
+      req.user?._id || req.admin?._id,
+      conversationId,
+      msgId,
+    );
+
+    return res.json({ thread });
+  } catch (err) {
+    if (err.message === 'OUTLOOK_NOT_CONNECTED' || err.message === 'NOT_CONNECTED') {
+      return res.status(403).json({ message: 'Outlook not connected' });
+    }
+    const graphErr = err.response?.data?.error;
+    console.error('[getThreadByMessageId]', graphErr ? `${graphErr.code}: ${graphErr.message}` : err.message);
+    return res.status(500).json({ message: graphErr?.message || err.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/email/threads/batch
+//
+// Fetches up to 20 conversation threads in parallel.
+// Body: { requests: [{ conversationId, excludeId }, ...] }
+// Returns: { threads: { [conversationId]: [...messages] } }
+// ─────────────────────────────────────────────────────────────────────────────
+exports.getBatchThreads = async (req, res) => {
+  try {
+    const userId   = req.user?._id || req.admin?._id;
+    const { requests = [] } = req.body;
+
+    if (!Array.isArray(requests) || requests.length === 0) {
+      return res.status(400).json({ message: 'requests array is required' });
+    }
+
+    const threads = await outlookService.fetchMultipleThreads(userId, requests);
+    return res.json({ threads });
+  } catch (err) {
+    if (err.message === 'OUTLOOK_NOT_CONNECTED' || err.message === 'NOT_CONNECTED') {
+      return res.status(403).json({ message: 'Outlook not connected' });
+    }
+    console.error('[getBatchThreads]', err.response?.data || err.message);
+    return res.status(500).json({ message: err.response?.data?.error?.message || err.message });
   }
 };
 

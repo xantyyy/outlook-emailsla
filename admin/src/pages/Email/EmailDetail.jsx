@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from '@tanstack/react-query';
 import api from "../../services/api";
+import { useThread } from "../../hooks/useThread";
 import ActionBtn from "./ActionBtn";
 import ReplyBox from "./ReplyBox";
 
@@ -349,10 +351,10 @@ function MessageHeader({ name, email, to, cc, date, isSentByMe, onReply, onReply
   );
 }
 
-function ThreadCard({ msg, isLast, onReply, onReplyAll, outlookConnected, isSentByMe }) {
+function ThreadCard({ msg, isLast, defaultExpanded = false, onReply, onReplyAll, outlookConnected, isSentByMe }) {
   const [showFull,    setShowFull]    = useState(false);
   const [hasQuoted,   setHasQuoted]   = useState(false);
-  const [isExpanded,  setIsExpanded]  = useState(false);
+  const [isExpanded,  setIsExpanded]  = useState(defaultExpanded);
 
   const name       = msg.from?.emailAddress?.name||msg.from?.emailAddress?.address||'Unknown';
   const email      = msg.from?.emailAddress?.address || '';
@@ -481,14 +483,22 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
   const [isSending,        setIsSending]        = useState(false);
   const [sendError,        setSendError]        = useState(null);
   const [sendSuccess,      setSendSuccess]      = useState(false);
-  const [thread,           setThread]           = useState([]);
-  const [threadLoading,    setThreadLoading]    = useState(false);
   const [myEmail,          setMyEmail]          = useState('');
   const [replyPanelH,      setReplyPanelH]      = useState(0);
   const emailDetailRef = useRef(null);
   const replyBoxRef    = useRef(null);
   const replyPanelRef  = useRef(null);
   const forwardMenuRef = useRef(null);
+  const queryClient = useQueryClient();
+
+  const {
+    data: selectedThreadData,
+    isLoading: threadLoading,
+    refetch: refetchThread,
+  } = useThread(selectedMsg?.graphId, { enabled: outlookConnected && !!selectedMsg?.graphId });
+
+  const selectedEmail = selectedThreadData?.selectedEmail || selectedMsg;
+  const thread = selectedThreadData?.thread || [];
 
   useEffect(() => {
     if (!replyMode || !replyPanelRef.current) { setReplyPanelH(0); return; }
@@ -519,28 +529,6 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
     api.get('/outlook/status').then(r=>setMyEmail((r.data.email||'').toLowerCase())).catch(()=>{});
   }, [outlookConnected]);
 
-  const fetchThread = useCallback(async () => {
-    setThread([]);
-    if (!selectedMsg?.msId||!outlookConnected||!selectedMsg?.conversationId) return;
-    setThreadLoading(true);
-    try {
-      const res=await api.get('/outlook/emails/'+selectedMsg.msId+'/thread',{params:{conversationId:selectedMsg.conversationId}});
-      const raw = res.data.thread || [];
-      // Sort oldest → newest so the main email is always first, replies follow in order
-      const sorted = [...raw].sort((a, b) => {
-        const da = new Date(a.receivedDateTime || a.sentDateTime || 0).getTime();
-        const db = new Date(b.receivedDateTime || b.sentDateTime || 0).getTime();
-        return da - db;
-      });
-      // Remove the original selected message from the thread list (it's already rendered above)
-      const filtered = sorted.filter(m => m.id !== selectedMsg.msId);
-      setThread(filtered);
-    } catch(err) { console.error('[EmailDetail] thread fetch failed:',err.response?.data||err.message); setThread([]); }
-    finally { setThreadLoading(false); }
-  }, [selectedMsg?.msId,selectedMsg?.conversationId,outlookConnected]);
-
-  useEffect(() => { fetchThread(); }, [fetchThread]);
-
   const openReply = (mode) => {
     setReplyMode(mode); setReplyText(""); setShowReplyCc(false); setSendError(null); setSendSuccess(false);
     const toNames=mode==="reply"?[selectedMsg.sender]:[selectedMsg.sender,...(selectedMsg.cc||[])].filter(Boolean);
@@ -561,7 +549,11 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
         if (!res.ok) throw new Error(data.message||"Failed to send reply");
         if (onStatusChange&&status) onStatusChange(selectedMsg.id,status);
         setSendSuccess(true); closeReply();
-        setTimeout(()=>{ fetchThread(); onSyncEmails?.(); },2000);
+        setTimeout(async () => {
+          await queryClient.invalidateQueries(['thread', selectedMsg.graphId]);
+          await queryClient.invalidateQueries(['messages']);
+          onSyncEmails?.();
+        }, 2000);
       } catch(err) { setSendError(err.message||"Failed to send. Please try again."); }
       finally { setIsSending(false); }
       return;
@@ -725,12 +717,6 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
 
         <div style={{ marginBottom:12,padding:'18px 18px',paddingTop:'18px' }}>
 
-          {/* Date divider for original message */}
-          {selectedMsg.receivedAt||selectedMsg.time ? <DateDivider label={getDateLabel(selectedMsg.receivedAt||selectedMsg.time)}/> : null}
-
-          {/* Original message bubble — same layout as ThreadCard */}
-          <OriginalMsgBubble msg={selectedMsg} isOutlookEmail={isOutlookEmail} onReply={()=>openReply('reply')} onReplyAll={()=>openReply('replyAll')} outlookConnected={outlookConnected}/>
-
           {threadLoading && (
             <div style={{ display:'flex',alignItems:'center',gap:8,padding:'8px 4px',color:T.text2,fontSize:11.5,fontFamily:T.font }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={T.violet} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation:'ed-spin 0.8s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
@@ -738,26 +724,42 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
             </div>
           )}
 
+          {/* ── Unified thread render: oldest → newest (mirrors Outlook) ────────
+               useThread now returns the full sorted thread (including the clicked
+               message) so we no longer render OriginalMsgBubble separately.
+               Every message uses ThreadCard for a consistent collapsed/expanded UX.
+               The last card (newest reply) starts expanded so the user lands on it.
+          ─────────────────────────────────────────────────────────────────────── */}
           {!threadLoading && (() => {
+            // Fallback: if thread is empty (e.g. Outlook not connected), show selectedMsg alone
+            const allMsgs = thread.length > 0
+              ? thread
+              : [{ ...selectedMsg, id: selectedMsg.graphId || selectedMsg.id, from: { emailAddress: { name: selectedMsg.sender, address: selectedMsg.senderEmail } }, receivedDateTime: selectedMsg.receivedAt, body: { content: selectedMsg.body, contentType: selectedMsg.bodyType || 'html' } }];
+
             const items = [];
             let lastLabel = null;
-            // also include the original message as first item for date grouping
-            const allMsgs = [
-              { _isOriginal: true, iso: selectedMsg.receivedAt || selectedMsg.time },
-              ...thread.map(m => ({ _isOriginal: false, msg: m, iso: m.receivedDateTime || m.sentDateTime }))
-            ];
-            allMsgs.forEach((item, idx) => {
-              if (item._isOriginal) return; // original bubble already rendered above
-              const label = getDateLabel(item.iso);
+
+            allMsgs.forEach((m, idx) => {
+              const iso = m.receivedDateTime || m.sentDateTime;
+              const label = getDateLabel(iso);
               if (label && label !== lastLabel) {
                 items.push(<DateDivider key={`div-${idx}`} label={label}/>);
                 lastLabel = label;
               }
-              const m = item.msg;
-              const senderAddr = (m.from?.emailAddress?.address||'').toLowerCase();
-              const sentByMe = !!(myEmail && senderAddr === myEmail);
+              const senderAddr = (m.from?.emailAddress?.address || '').toLowerCase();
+              const sentByMe   = !!(myEmail && senderAddr === myEmail);
+              const isLast     = idx === allMsgs.length - 1;
               items.push(
-                <ThreadCard key={m.id} msg={m} isLast={idx===allMsgs.length-1} onReply={()=>openReply('reply')} onReplyAll={()=>openReply('replyAll')} outlookConnected={outlookConnected} isSentByMe={sentByMe}/>
+                <ThreadCard
+                  key={m.id}
+                  msg={m}
+                  isLast={isLast}
+                  defaultExpanded={isLast}
+                  onReply={()=>openReply('reply')}
+                  onReplyAll={()=>openReply('replyAll')}
+                  outlookConnected={outlookConnected}
+                  isSentByMe={sentByMe}
+                />
               );
             });
             return items;
