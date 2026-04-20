@@ -469,6 +469,105 @@ function OriginalMsgBubble({ msg, isOutlookEmail, onReply, onReplyAll, outlookCo
   );
 }
 
+/* ── SLA Toolbar ──────────────────────────────────────────────────────────── */
+const SLA_DURATION_MS = 8 * 60 * 60 * 1000;
+
+function useSlaTimer(selectedMsg) {
+  const getRemaining = React.useCallback(() => {
+    if (!selectedMsg?.receivedAt && !selectedMsg?.time) return SLA_DURATION_MS;
+    const received = new Date(selectedMsg.receivedAt || selectedMsg.time).getTime();
+    return Math.max(0, received + SLA_DURATION_MS - Date.now());
+  }, [selectedMsg?.id, selectedMsg?.receivedAt, selectedMsg?.time]);
+
+  const [remainingMs, setRemainingMs] = React.useState(getRemaining);
+
+  React.useEffect(() => {
+    setRemainingMs(getRemaining());
+    const id = setInterval(() => setRemainingMs(getRemaining()), 1000);
+    return () => clearInterval(id);
+  }, [getRemaining]);
+
+  const pct       = Math.max(0, Math.min(100, (remainingMs / SLA_DURATION_MS) * 100));
+  const isExpired = remainingMs <= 0;
+  const urgency   = isExpired ? '#dc2626' : pct < 15 ? '#dc2626' : pct < 40 ? '#d97706' : '#059669';
+
+  const fmt = (ms) => {
+    if (ms <= 0) return '00:00:00';
+    const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return [h, m, sec].map(n => String(n).padStart(2, '0')).join(':');
+  };
+
+  const deadlineDate = () => {
+    const base = (selectedMsg?.receivedAt || selectedMsg?.time)
+      ? new Date(selectedMsg.receivedAt || selectedMsg.time).getTime()
+      : Date.now() - (SLA_DURATION_MS - remainingMs);
+    return new Date(base + SLA_DURATION_MS);
+  };
+
+  return { remainingMs, pct, isExpired, urgency, fmt, deadlineDate };
+}
+
+function SlaToolbar({ emailStatus, setEmailStatus, selectedMsg }) {
+  const { remainingMs, pct, isExpired, urgency, fmt, deadlineDate } = useSlaTimer(selectedMsg);
+
+  const fmtDeadline = (d) =>
+    d.toLocaleString([], { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  const handleStatusClick = () => {
+    const keys = EMAIL_STATUSES.map(s => s.key);
+    const idx  = keys.indexOf(emailStatus?.key || 'open');
+    setEmailStatus(EMAIL_STATUSES[(idx + 1) % EMAIL_STATUSES.length]);
+  };
+
+  return (
+    <div style={{ display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:`1px solid ${T.border}`,background:'#ffffff',flexShrink:0,flexWrap:'wrap',fontFamily:T.font }}>
+
+      {emailStatus && (
+        <button onClick={handleStatusClick} title="Click to change status"
+          style={{ display:'inline-flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:20,border:`0.5px solid ${emailStatus.color}55`,background:`${emailStatus.color}11`,cursor:'pointer',flexShrink:0,outline:'none' }}>
+          <span style={{ width:7,height:7,borderRadius:'50%',background:emailStatus.color,display:'inline-block',flexShrink:0 }}/>
+          <span style={{ fontSize:11,fontWeight:600,color:emailStatus.color,letterSpacing:'0.04em',textTransform:'uppercase',whiteSpace:'nowrap',fontFamily:T.font }}>{emailStatus.label}</span>
+        </button>
+      )}
+
+      <div style={{ width:1,height:22,background:T.border,flexShrink:0 }}/>
+
+      <div style={{ display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={urgency} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:'stroke 0.3s' }}>
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <div style={{ display:'flex',flexDirection:'column',gap:1,minWidth:0 }}>
+          <span style={{ fontSize:10,color:T.text2,fontWeight:400,whiteSpace:'nowrap',letterSpacing:'0.02em',fontFamily:T.font }}>SLA Response deadline</span>
+          <div style={{ display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap' }}>
+            <span style={{ fontSize:14,fontWeight:600,color:urgency,fontVariantNumeric:'tabular-nums',whiteSpace:'nowrap',letterSpacing:'-0.3px',transition:'color 0.3s',fontFamily:T.font }}>
+              {isExpired ? 'Expired' : fmt(remainingMs)}
+            </span>
+            {!isExpired && <span style={{ fontSize:10,color:T.text2,whiteSpace:'nowrap',fontFamily:T.font }}>remaining</span>}
+          </div>
+        </div>
+        <div style={{ width:72,height:4,background:T.bg3,borderRadius:99,overflow:'hidden',flexShrink:0 }}>
+          <div style={{ height:'100%',width:`${pct}%`,background:urgency,borderRadius:99,transition:'width 1s linear, background 0.3s' }}/>
+        </div>
+      </div>
+
+      <div style={{ width:1,height:22,background:T.border,flexShrink:0 }}/>
+
+      <div style={{ display:'flex',alignItems:'center',gap:6,flexShrink:0 }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <div style={{ display:'flex',flexDirection:'column',gap:1 }}>
+          <span style={{ fontSize:10,color:T.text2,whiteSpace:'nowrap',letterSpacing:'0.02em',fontFamily:T.font }}>Expires on</span>
+          <span style={{ fontSize:12,fontWeight:600,color:isExpired ? '#dc2626' : T.text1,whiteSpace:'nowrap',fontFamily:T.font }}>{fmtDeadline(deadlineDate())}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookConnected, onStatusChange, onSyncEmails }) {
   const [replyMode,        setReplyMode]        = useState(null);
   const [replyText,        setReplyText]        = useState("");
@@ -612,48 +711,9 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
       `}</style>
 
       {/* ── Toolbar ── */}
-      <div style={{ display:'flex',alignItems:'center',gap:6,padding:'10px 16px',borderBottom:`1px solid ${T.border}`,background:'#ffffff',flexShrink:0,flexWrap:'wrap' }}>
+      <SlaToolbar emailStatus={emailStatus} setEmailStatus={setEmailStatus} selectedMsg={selectedMsg} />
 
-        {/* Reply */}
-        <button onClick={()=>openReply("reply")} title="Reply"
-          style={{ display:'flex',alignItems:'center',gap:6,padding:'7px 16px',borderRadius:20,border:'none',background:replyMode==='reply'?'inset':'#ffffff',boxShadow:replyMode==='reply'?'inset 3px 3px 8px rgba(13,39,80,0.14),inset -2px -2px 6px rgba(255,255,255,0.85)':'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)',color:replyMode==='reply'?T.violetBright:T.text1,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s',fontFamily:T.font,whiteSpace:'nowrap' }}
-          onMouseEnter={e=>{if(replyMode!=='reply'){e.currentTarget.style.boxShadow='8px 8px 20px rgba(13,39,80,0.17),-5px -5px 14px rgba(255,255,255,0.95)';e.currentTarget.style.color=T.violetBright;}}}
-          onMouseLeave={e=>{if(replyMode!=='reply'){e.currentTarget.style.boxShadow='6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)';e.currentTarget.style.color=T.text1;}}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-          Reply
-        </button>
-
-        {/* Delete + Star icon buttons */}
-        {[
-          {icon:<><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></>,label:'Delete'},
-          {icon:<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,label:'Important'},
-        ].map(({icon,label})=>(
-          <button key={label} title={label}
-            style={{ display:'flex',alignItems:'center',justifyContent:'center',width:36,height:36,borderRadius:'50%',border:'none',background:'#ffffff',color:T.text2,cursor:'pointer',transition:'all 0.15s',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)' }}
-            onMouseEnter={e=>{e.currentTarget.style.boxShadow='8px 8px 20px rgba(13,39,80,0.17),-5px -5px 14px rgba(255,255,255,0.95)';e.currentTarget.style.color=T.text0;}}
-            onMouseLeave={e=>{e.currentTarget.style.boxShadow='6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)';e.currentTarget.style.color=T.text2;}}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
-          </button>
-        ))}
-
-        <div style={{ flex:1 }} />
-
-        {/* Outlook badge */}
-        {isOutlookEmail && (
-          <div style={{ display:'flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#ffffff',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgb(255, 255, 255)',color:'#2563eb',fontSize:11.5,fontWeight:700,fontFamily:T.font,letterSpacing:'0.03em' }}>
-            <div style={{ width:6,height:6,borderRadius:'50%',background:'#2563eb',boxShadow:'0 0 6px rgba(37,99,235,0.5)' }}/>Outlook
-          </div>
-        )}
-
-        {/* Status badge */}
-        {emailStatus && (
-          <div style={{ display:'flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,background:'#ffffff',boxShadow:'6px 6px 16px rgba(13,39,80,0.13),-4px -4px 12px rgba(255,255,255,0.92)',color:emailStatus.color,fontSize:11.5,fontWeight:700,flexShrink:0,fontFamily:T.font,letterSpacing:'0.03em' }}>
-            <span style={{ width:6,height:6,borderRadius:'50%',background:emailStatus.color,display:'inline-block',boxShadow:`0 0 6px ${emailStatus.color}80` }}/>{emailStatus.label}
-          </div>
-        )}
-      </div>
-
-      {sendSuccess && (
+            {sendSuccess && (
         <div style={{ margin:'10px 16px 0',padding:'9px 14px',background:T.greenLo,border:`1px solid rgba(5,150,105,0.2)`,borderRadius:12,display:'flex',alignItems:'center',gap:10,fontSize:12,fontWeight:600,color:T.green,animation:'ed-fadeUp 0.2s ease',fontFamily:T.font }}>
           <div style={{ width:18,height:18,borderRadius:6,background:'rgba(5,150,105,0.12)',display:'flex',alignItems:'center',justifyContent:'center' }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -679,7 +739,7 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
           const extra = toRecipients.length > 0 ? toRecipients.length - 1 : 0;
 
           return (
-            <div style={{ marginBottom:0 }}>
+            <div style={{ marginBottom:0,position:'sticky',top:0,zIndex:10 }}>
               <div style={{ display:'flex',alignItems:'center',gap:14,padding:'16px 20px',borderRadius:0,background:'#ffffff',boxShadow:`0 4px 16px rgba(13,39,80,0.12)` }}>
                 <div style={{ width:42,height:42,borderRadius:14,flexShrink:0,background:avatarColor(shown[0]||''),display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:700,color:'#fff',fontFamily:T.font,boxShadow:'4px 4px 10px rgba(13,39,80,0.15), -3px -3px 8px rgba(255,255,255,0.8)' }}>
                   {initials(shown[0]||'')}
