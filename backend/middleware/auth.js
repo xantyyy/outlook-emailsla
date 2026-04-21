@@ -6,8 +6,6 @@ const auth = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'] || req.headers.Authorization || req.get('Authorization');
 
-    console.log('🔍 Auth middleware - Authorization header:', authHeader ? 'Present' : 'Missing');
-
     if (!authHeader) {
       return res.status(401).json({ message: 'No authentication token, access denied' });
     }
@@ -20,7 +18,6 @@ const auth = async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('✓ Token verified | accountType:', decoded.accountType, '| role:', decoded.role);
 
     let account = null;
 
@@ -33,12 +30,10 @@ const auth = async (req, res, next) => {
     }
 
     if (!account) {
-      console.log('❌ Account not found with ID:', decoded.id);
       return res.status(401).json({ message: 'Account not found' });
     }
 
     if (!account.isActive) {
-      console.log('❌ Account is deactivated:', account.email);
       return res.status(403).json({ message: 'Account is deactivated' });
     }
 
@@ -51,7 +46,6 @@ const auth = async (req, res, next) => {
     req.admin = account;
     req.user  = account;
 
-    console.log('✓ Auth successful for:', account.email, `(${decoded.accountType})`);
     next();
 
   } catch (error) {

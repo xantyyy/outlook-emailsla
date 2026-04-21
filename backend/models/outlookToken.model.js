@@ -27,6 +27,10 @@ const outlookTokenSchema = new mongoose.Schema({
 
   connectedAt: { type: Date, default: Date.now },
   lastSyncAt:  { type: Date, default: null },
+
+  // Graph change-notification subscription
+  graphSubscriptionId:     { type: String, default: null, index: true },
+  graphSubscriptionExpiry: { type: Date,   default: null },
 }, { timestamps: true });
 
 // Returns true if access token still has > 5 min before expiry

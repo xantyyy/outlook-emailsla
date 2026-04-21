@@ -532,6 +532,21 @@ export default function MessagingPage() {
   const handleStatusChange = (msgId, newStatus) => {
     queryClient.setQueryData(['messages', folderId], prev => prev ? prev.map(m => m.id === msgId ? { ...m, status: newStatus } : m) : prev);
     setSelectedMsg(prev => prev?.id === msgId ? { ...prev, status: newStatus } : prev);
+
+    const messages = queryClient.getQueryData(['messages', folderId]);
+    const msg = Array.isArray(messages) ? messages.find(m => m.id === msgId) : null;
+    const conversationId = msg?.conversationId || selectedMsg?.conversationId;
+    if (conversationId) {
+      queryClient.setQueryData(['ticket', conversationId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          status: newStatus,
+          updatedAt: new Date().toISOString(),
+          slaPausedAt: newStatus === 'pending' ? new Date().toISOString() : null,
+        };
+      });
+    }
   };
 
   const handleCompose = (initialData = null) => {
@@ -728,25 +743,6 @@ export default function MessagingPage() {
             background: 'rgba(13,16,33,0.36)', zIndex: 100, backdropFilter: 'blur(3px)',
           }}
         />
-      )}
-
-      {/* ── SLA Banner ── */}
-      {activeTicket && (
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <SlaBanner ticket={activeTicket}/>
-          <button onClick={() => setActiveTicket(null)} style={{
-            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-            right: 18, background: 'none', border: 'none', cursor: 'pointer',
-            color: T.text2, display: 'flex', alignItems: 'center',
-            justifyContent: 'center', width: 26, height: 26,
-            borderRadius: 7, transition: 'all 0.15s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.color = T.text1; e.currentTarget.style.background = T.bg3; }}
-            onMouseLeave={e => { e.currentTarget.style.color = T.text2; e.currentTarget.style.background = 'none'; }}
-            title="Dismiss">
-            <X size={13}/>
-          </button>
-        </div>
       )}
 
       {/* ── Outlook status bars ── */}

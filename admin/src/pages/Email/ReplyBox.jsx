@@ -35,12 +35,22 @@ const EMOJIS = [
 ];
 
 const SEND_STATUSES = [
-  { key:"new",     label:"New",     color:'#b45309', dot:'#f59e0b' },
-  { key:"open",    label:"Open",    color:'#991b1b', dot:'#ef4444' },
   { key:"pending", label:"Pending", color:'#1e40af', dot:'#3b82f6' },
-  { key:"onhold",  label:"On Hold", color:'#6b21a8', dot:'#a855f7' },
   { key:"solved",  label:"Solved",  color:'#166534', dot:'#10b981' },
 ];
+
+/**
+ * Agent reply choices: only Pending (waiting for customer) or Solved (done).
+ * Open is automatic — it's set by the webhook when the customer replies.
+ * On Hold / Solved can be added back later if needed.
+ */
+function getSendStatusOptions() {
+  return SEND_STATUSES;
+}
+
+function getDefaultSendStatus() {
+  return 'pending';
+}
 
 const MIN_H = 72;
 const MAX_H = 420;
@@ -84,20 +94,17 @@ export default function ReplyBox({
   replyAll         = false,
   outlookConnected = false,
   selectedMsg      = null,
+  ticketStatus     = null,  // current ticket status from backend ('new'|'open'|'pending'|...)
 }) {
   const replyRef        = useRef(null);
   const fileInputRef    = useRef(null);
   const photoInputRef   = useRef(null);
-  const sendDropdownRef = useRef(null);
   const emojiWrapRef    = useRef(null);
 
-  const [showSendDropdown, setShowSendDropdown] = useState(false);
   const [showEmojiPicker,  setShowEmojiPicker]  = useState(false);
   const [attachments,      setAttachments]       = useState([]);
-  const [selectedStatus,   setSelectedStatus]    = useState("open");
   const [editorH,          setEditorH]           = useState(MIN_H);
 
-  const currentStatus  = SEND_STATUSES.find(s => s.key === selectedStatus) || SEND_STATUSES[1];
   const isOutlookEmail = !!selectedMsg?.msId;
   const canSendOutlook = isOutlookEmail && outlookConnected;
 
@@ -115,7 +122,6 @@ export default function ReplyBox({
 
   useEffect(() => {
     const h = (e) => {
-      if (sendDropdownRef.current && !sendDropdownRef.current.contains(e.target)) setShowSendDropdown(false);
       if (emojiWrapRef.current    && !emojiWrapRef.current.contains(e.target))    setShowEmojiPicker(false);
     };
     document.addEventListener("mousedown", h);
@@ -142,16 +148,11 @@ export default function ReplyBox({
     if (url) { replyRef.current?.focus(); document.execCommand("createLink", false, url); }
   };
 
-  const handleSendOption = (option) => {
-    setShowSendDropdown(false);
-    if (option === "send") {
-      const bodyHtml = replyRef.current?.innerHTML || "";
-      const bodyText = replyRef.current?.innerText  || "";
-      if (!bodyText.trim()) return;
-      onSend(bodyHtml, { replyAll, status: selectedStatus });
-    } else if (option === "schedule") {
-      alert("Schedule send: Coming soon!");
-    }
+  const handleSendOption = (status) => {
+    const bodyHtml = replyRef.current?.innerHTML || "";
+    const bodyText = replyRef.current?.innerText  || "";
+    if (!bodyText.trim()) return;
+    onSend(bodyHtml, { replyAll, status });
   };
 
   const handleExpandToCompose = () => {
@@ -159,14 +160,6 @@ export default function ReplyBox({
     onExpandToCompose?.({ toChips: replyToChips, ccChips: replyCcChips, body: currentBody, attachments });
   };
 
-  const sendBtnBg    = canSendOutlook
-    ? 'linear-gradient(135deg,#8b0000,#c0392b)'
-    : `linear-gradient(135deg,${currentStatus.color},${currentStatus.color}cc)`;
-  const sendBtnLabel = isSending
-    ? "Sending…"
-    : canSendOutlook
-      ? (replyAll ? "Reply All via Outlook" : "Reply via Outlook")
-      : `Send as ${currentStatus.label}`;
   const atMax = editorH >= MAX_H;
 
   return (
@@ -416,65 +409,46 @@ export default function ReplyBox({
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </NeuBtn>
 
-          <div ref={sendDropdownRef} style={{ position: 'relative', display: 'flex', borderRadius: 20, overflow: 'hidden', boxShadow: isSending ? 'none' : canSendOutlook ? '0 4px 16px rgba(139,0,0,0.30)' : `0 4px 14px ${currentStatus.color}32` }}>
-            <button onClick={() => handleSendOption("send")} disabled={isSending}
+          {/* ── Two direct send buttons: Pending + Solved ── */}
+          {/* Same for both Outlook and non-Outlook — label changes for Outlook */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {/* Send as Pending */}
+            <button
+              onClick={() => handleSendOption('pending')}
+              disabled={isSending}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7, padding: '8px 18px',
-                background: isSending ? T.bg3 : sendBtnBg,
-                color: isSending ? T.text2 : '#fff', border: 'none',
-                borderRadius: canSendOutlook ? '20px' : '20px 0 0 20px',
+                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                background: isSending ? T.bg3 : 'linear-gradient(135deg,#1e40af,#3b82f6)',
+                color: isSending ? T.text2 : '#fff', border: 'none', borderRadius: 20,
                 fontSize: 12, fontWeight: 700, cursor: isSending ? 'not-allowed' : 'pointer',
                 transition: 'all 0.15s', fontFamily: T.font, letterSpacing: '0.01em',
-              }}>
+                boxShadow: isSending ? 'none' : '0 4px 14px rgba(59,130,246,0.35)',
+              }}
+            >
               {isSending
-                ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'rb-spin 0.8s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'rb-spin 0.8s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               }
-              {sendBtnLabel}
+              {isSending ? 'Sending…' : canSendOutlook ? (replyAll ? 'Reply All · Pending' : 'Reply · Pending') : 'Send as Pending'}
             </button>
 
-            {!canSendOutlook && (
-              <button disabled={isSending}
+            {/* Send as Solved */}
+            {!isSending && (
+              <button
+                onClick={() => handleSendOption('solved')}
+                disabled={isSending}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32,
-                  background: isSending ? T.bg3 : sendBtnBg,
-                  color: isSending ? T.text2 : 'rgba(255,255,255,0.85)',
-                  border: 'none', borderLeft: '1px solid rgba(255,255,255,0.18)',
-                  borderRadius: '0 20px 20px 0',
-                  cursor: isSending ? 'not-allowed' : 'pointer', transition: 'all 0.15s',
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                  background: 'linear-gradient(135deg,#166534,#10b981)',
+                  color: '#fff', border: 'none', borderRadius: 20,
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  transition: 'all 0.15s', fontFamily: T.font, letterSpacing: '0.01em',
+                  boxShadow: '0 4px 14px rgba(16,185,129,0.30)',
                 }}
-                onMouseDown={e => { e.stopPropagation(); if (!isSending) setShowSendDropdown(v => !v); }}>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                {canSendOutlook ? (replyAll ? 'Reply All · Solved' : 'Reply · Solved') : 'Send as Solved'}
               </button>
-            )}
-
-            {showSendDropdown && !canSendOutlook && (
-              <div style={{
-                position: 'absolute', bottom: 'calc(100% + 12px)', right: 0,
-                minWidth: 185, zIndex: 400, animation: 'rb-slideUp 0.15s ease',
-                background: T.bg0, borderRadius: 18, padding: 6,
-                boxShadow: '10px 10px 28px rgba(13,39,80,0.18), -6px -6px 18px rgba(255,255,255,0.92)',
-              }}>
-                {SEND_STATUSES.map(status => (
-                  <button key={status.key} onClick={() => { setSelectedStatus(status.key); setShowSendDropdown(false); }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      width: '100%', padding: '8px 13px', border: 'none',
-                      background: selectedStatus === status.key ? T.bg2 : 'transparent',
-                      fontSize: 12, color: T.text1, cursor: 'pointer',
-                      textAlign: 'left', transition: 'background 0.12s',
-                      fontFamily: T.font, borderRadius: 11,
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = T.bg2}
-                    onMouseLeave={e => e.currentTarget.style.background = selectedStatus === status.key ? T.bg2 : 'transparent'}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: status.dot, flexShrink: 0, boxShadow: `0 0 6px ${status.dot}70` }}/>
-                    {status.label}
-                    {selectedStatus === status.key && (
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={T.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto' }}><polyline points="20 6 9 17 4 12"/></svg>
-                    )}
-                  </button>
-                ))}
-              </div>
             )}
           </div>
         </div>

@@ -4,6 +4,7 @@ import api from "../../services/api";
 import { useThread } from "../../hooks/useThread";
 import ActionBtn from "./ActionBtn";
 import ReplyBox from "./ReplyBox";
+import { useTicket, useTicketSocketSync, useSlaTimer, useUpdateTicketStatus, lockPendingTicketStatus, unlockPendingTicketStatus } from '../../hooks/useTickets';
 
 /* ── Design tokens (Light Mode — Maroon & White) ────────────────────────────── */
 const T = {
@@ -469,30 +470,42 @@ function OriginalMsgBubble({ msg, isOutlookEmail, onReply, onReplyAll, outlookCo
   );
 }
 
-/* ── SLA Toolbar ──────────────────────────────────────────────────────────── */
-const SLA_DURATION_MS = 8 * 60 * 60 * 1000;
+/* ── Real SLA Toolbar — connected to ticket data from backend ─────────────── */
+function SlaToolbar({ selectedMsg }) {
+  const conversationId = selectedMsg?.conversationId || null;
 
-function useSlaTimer(selectedMsg) {
-  const getRemaining = React.useCallback(() => {
-    if (!selectedMsg?.receivedAt && !selectedMsg?.time) return SLA_DURATION_MS;
-    const received = new Date(selectedMsg.receivedAt || selectedMsg.time).getTime();
-    return Math.max(0, received + SLA_DURATION_MS - Date.now());
-  }, [selectedMsg?.id, selectedMsg?.receivedAt, selectedMsg?.time]);
+  // Auto-ensure ticket exists when an Outlook email is opened.
+  // Backend uses upsert so this is safe to call repeatedly.
+  useEffect(() => {
+    if (!conversationId || !selectedMsg?.msId) return;
+    const token = localStorage.getItem('adminToken');
+    fetch('/api/tickets/ensure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        conversationId,
+        messageId:     selectedMsg.msId,
+        subject:       selectedMsg.subject,
+        customerEmail: selectedMsg.senderEmail,
+        customerName:  selectedMsg.sender,
+      }),
+    }).catch(() => {}); // silent — ticket may already exist
+  }, [conversationId, selectedMsg?.msId]);
 
-  const [remainingMs, setRemainingMs] = React.useState(getRemaining);
+  // Fetch real ticket from backend
+  const { data: ticket, isLoading: ticketLoading, isError: ticketError } = useTicket(conversationId);
 
-  React.useEffect(() => {
-    setRemainingMs(getRemaining());
-    const id = setInterval(() => setRemainingMs(getRemaining()), 1000);
-    return () => clearInterval(id);
-  }, [getRemaining]);
+  // Live SLA countdown from real ticket data
+  const { remainingMs, isExpired, isPaused } = useSlaTimer(ticket);
 
-  const pct       = Math.max(0, Math.min(100, (remainingMs / SLA_DURATION_MS) * 100));
-  const isExpired = remainingMs <= 0;
-  const urgency   = isExpired ? '#dc2626' : pct < 15 ? '#dc2626' : pct < 40 ? '#d97706' : '#059669';
+  // Real-time socket sync
+  useTicketSocketSync(ticket?._id, conversationId);
+
+  // Status update mutation - kept for future use
+  // const { mutate: updateStatus, isPending: isUpdating } = useUpdateTicketStatus();
 
   const fmt = (ms) => {
-    if (ms <= 0) return '00:00:00';
+    if (!isFinite(ms) || ms <= 0) return '00:00:00';
     const s = Math.floor(ms / 1000);
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
@@ -500,70 +513,93 @@ function useSlaTimer(selectedMsg) {
     return [h, m, sec].map(n => String(n).padStart(2, '0')).join(':');
   };
 
-  const deadlineDate = () => {
-    const base = (selectedMsg?.receivedAt || selectedMsg?.time)
-      ? new Date(selectedMsg.receivedAt || selectedMsg.time).getTime()
-      : Date.now() - (SLA_DURATION_MS - remainingMs);
-    return new Date(base + SLA_DURATION_MS);
+  // Color based on real remaining time
+  const urgency = isExpired
+    ? '#dc2626'
+    : isPaused
+      ? '#6b7280'
+      : remainingMs < 60_000
+        ? '#dc2626'
+        : remainingMs < 300_000
+          ? '#d97706'
+          : '#059669';
+
+  // Progress bar — based on real slaDeadline
+  const totalMs = ticket?.slaDurationMs || 5 * 60 * 1000;
+  const pct = isExpired ? 100 : Math.max(0, Math.min(100, ((totalMs - remainingMs) / totalMs) * 100));
+
+  const STATUS_CONFIG = {
+    new:     { label: 'NEW',     color: '#d97706', bg: 'rgba(217,119,6,0.1)'   },
+    open:    { label: 'OPEN',    color: '#dc2626', bg: 'rgba(220,38,38,0.09)'  },
+    pending: { label: 'PENDING', color: '#8b0000', bg: 'rgba(139,0,0,0.09)'    },
   };
+  const cfg = STATUS_CONFIG[ticket?.status] || STATUS_CONFIG.open;
 
-  return { remainingMs, pct, isExpired, urgency, fmt, deadlineDate };
-}
-
-function SlaToolbar({ emailStatus, setEmailStatus, selectedMsg }) {
-  const { remainingMs, pct, isExpired, urgency, fmt, deadlineDate } = useSlaTimer(selectedMsg);
-
-  const fmtDeadline = (d) =>
-    d.toLocaleString([], { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' });
-
-  const handleStatusClick = () => {
-    const keys = EMAIL_STATUSES.map(s => s.key);
-    const idx  = keys.indexOf(emailStatus?.key || 'open');
-    setEmailStatus(EMAIL_STATUSES[(idx + 1) % EMAIL_STATUSES.length]);
-  };
+  // If no conversationId, show nothing (non-outlook email)
+  if (!conversationId) return null;
 
   return (
     <div style={{ display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:`1px solid ${T.border}`,background:'#ffffff',flexShrink:0,flexWrap:'wrap',fontFamily:T.font }}>
 
-      {emailStatus && (
-        <button onClick={handleStatusClick} title="Click to change status"
-          style={{ display:'inline-flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:20,border:`0.5px solid ${emailStatus.color}55`,background:`${emailStatus.color}11`,cursor:'pointer',flexShrink:0,outline:'none' }}>
-          <span style={{ width:7,height:7,borderRadius:'50%',background:emailStatus.color,display:'inline-block',flexShrink:0 }}/>
-          <span style={{ fontSize:11,fontWeight:600,color:emailStatus.color,letterSpacing:'0.04em',textTransform:'uppercase',whiteSpace:'nowrap',fontFamily:T.font }}>{emailStatus.label}</span>
-        </button>
+      {/* Real status badge */}
+      {ticket && (
+        <span style={{ display:'inline-flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:20,border:`0.5px solid ${cfg.color}55`,background:cfg.bg,flexShrink:0 }}>
+          <span style={{ width:7,height:7,borderRadius:'50%',background:cfg.color,display:'inline-block',flexShrink:0,
+            animation: ticket.status==='open' ? 'ed-pulse 1.5s ease-in-out infinite' : 'none' }}/>
+          <span style={{ fontSize:11,fontWeight:600,color:cfg.color,letterSpacing:'0.04em',textTransform:'uppercase',whiteSpace:'nowrap',fontFamily:T.font }}>{cfg.label}</span>
+        </span>
       )}
 
       <div style={{ width:1,height:22,background:T.border,flexShrink:0 }}/>
 
-      <div style={{ display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={urgency} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:'stroke 0.3s' }}>
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <div style={{ display:'flex',flexDirection:'column',gap:1,minWidth:0 }}>
-          <span style={{ fontSize:10,color:T.text2,fontWeight:400,whiteSpace:'nowrap',letterSpacing:'0.02em',fontFamily:T.font }}>SLA Response deadline</span>
-          <div style={{ display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap' }}>
-            <span style={{ fontSize:14,fontWeight:600,color:urgency,fontVariantNumeric:'tabular-nums',whiteSpace:'nowrap',letterSpacing:'-0.3px',transition:'color 0.3s',fontFamily:T.font }}>
-              {isExpired ? 'Expired' : fmt(remainingMs)}
-            </span>
-            {!isExpired && <span style={{ fontSize:10,color:T.text2,whiteSpace:'nowrap',fontFamily:T.font }}>remaining</span>}
+      {/* Real SLA countdown */}
+      {ticket?.slaDeadline ? (
+        <div style={{ display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={urgency} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:'stroke 0.3s' }}>
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <div style={{ display:'flex',flexDirection:'column',gap:1,minWidth:0 }}>
+            <span style={{ fontSize:10,color:T.text2,fontWeight:400,whiteSpace:'nowrap',letterSpacing:'0.02em',fontFamily:T.font }}>SLA Response deadline</span>
+            <div style={{ display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap' }}>
+              <span style={{ fontSize:14,fontWeight:600,color:urgency,fontVariantNumeric:'tabular-nums',whiteSpace:'nowrap',letterSpacing:'-0.3px',transition:'color 0.3s',fontFamily:T.font }}>
+                {isExpired ? 'EXPIRED' : isPaused ? `PAUSED · ${fmt(remainingMs)}` : fmt(remainingMs)}
+              </span>
+              {!isExpired && !isPaused && <span style={{ fontSize:10,color:T.text2,whiteSpace:'nowrap',fontFamily:T.font }}>remaining</span>}
+            </div>
+          </div>
+          <div style={{ width:72,height:4,background:T.bg3,borderRadius:99,overflow:'hidden',flexShrink:0 }}>
+            <div style={{ height:'100%',width:`${pct}%`,background:urgency,borderRadius:99,transition:'width 1s linear, background 0.3s' }}/>
           </div>
         </div>
-        <div style={{ width:72,height:4,background:T.bg3,borderRadius:99,overflow:'hidden',flexShrink:0 }}>
-          <div style={{ height:'100%',width:`${pct}%`,background:urgency,borderRadius:99,transition:'width 1s linear, background 0.3s' }}/>
-        </div>
-      </div>
+      ) : (
+        <span style={{ fontSize:11,color:T.text2,fontFamily:T.font,flex:1 }}>
+          {ticketLoading
+            ? '⏳ Loading ticket…'
+            : ticketError || !ticket
+              ? 'SLA not started — ticket will be created when a reply is sent'
+              : 'SLA timer not started'}
+        </span>
+      )}
 
-      <div style={{ width:1,height:22,background:T.border,flexShrink:0 }}/>
+      {/* Deadline date */}
+      {ticket?.slaDeadline && (
+        <>
+          <div style={{ width:1,height:22,background:T.border,flexShrink:0 }}/>
+          <div style={{ display:'flex',alignItems:'center',gap:6,flexShrink:0 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <div style={{ display:'flex',flexDirection:'column',gap:1 }}>
+              <span style={{ fontSize:10,color:T.text2,whiteSpace:'nowrap',letterSpacing:'0.02em',fontFamily:T.font }}>Expires on</span>
+              <span style={{ fontSize:12,fontWeight:600,color:isExpired?'#dc2626':T.text1,whiteSpace:'nowrap',fontFamily:T.font }}>
+                {new Date(ticket.slaDeadline).toLocaleString([],{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
 
-      <div style={{ display:'flex',alignItems:'center',gap:6,flexShrink:0 }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={T.text2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        <div style={{ display:'flex',flexDirection:'column',gap:1 }}>
-          <span style={{ fontSize:10,color:T.text2,whiteSpace:'nowrap',letterSpacing:'0.02em',fontFamily:T.font }}>Expires on</span>
-          <span style={{ fontSize:12,fontWeight:600,color:isExpired ? '#dc2626' : T.text1,whiteSpace:'nowrap',fontFamily:T.font }}>{fmtDeadline(deadlineDate())}</span>
-        </div>
-      </div>
+      <style>{`@keyframes ed-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
     </div>
   );
 }
@@ -628,6 +664,9 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
     api.get('/outlook/status').then(r=>setMyEmail((r.data.email||'').toLowerCase())).catch(()=>{});
   }, [outlookConnected]);
 
+  // Fetch real ticket to know current status for ReplyBox context
+  const { data: currentTicket } = useTicket(selectedMsg?.conversationId || null);
+
   const openReply = (mode) => {
     setReplyMode(mode); setReplyText(""); setShowReplyCc(false); setSendError(null); setSendSuccess(false);
     const toNames=mode==="reply"?[selectedMsg.sender]:[selectedMsg.sender,...(selectedMsg.cc||[])].filter(Boolean);
@@ -635,26 +674,95 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
   };
   const closeReply = () => { setReplyMode(null); setReplyText(""); setReplyToChips([]); setReplyCcChips([]); setSendError(null); };
 
-  const sendReply = async (bodyHtml, { replyAll=false, status="open" }={}) => {
+  const sendReply = async (bodyHtml, { replyAll=false, status="pending" }={}) => {
     const body=bodyHtml||replyText; if (!body?.trim()) return;
     const isOutlookEmail=!!selectedMsg?.msId;
+    const previousStatus = selectedMsg?.status;
+    const backendStatus = status === 'onhold' ? 'on_hold' : status;
     if (isOutlookEmail&&outlookConnected) {
-      setIsSending(true); setSendError(null);
+      setSendError(null);
+      if (status && onStatusChange) onStatusChange(selectedMsg.id, status);
+      if (selectedMsg?.conversationId) {
+        // Lock BEFORE optimistic update so incoming socket events
+        // (from the PATCH or webhook) don't race and overwrite back to 'open'.
+        // The lock is released automatically when the customer replies
+        // (reason: 'customer_reply' in useTicketSocketSync), or on send error below.
+        if (backendStatus === 'pending') {
+          lockPendingTicketStatus(selectedMsg.conversationId);
+        }
+        queryClient.setQueryData(['ticket', selectedMsg.conversationId], (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            status: backendStatus,
+            updatedAt: new Date().toISOString(),
+            slaPausedAt: backendStatus === 'pending' ? new Date().toISOString() : null,
+          };
+        });
+      }
+      setIsSending(true);
       try {
         const token=localStorage.getItem("adminToken");
         const endpoint=replyAll?"replyAll":"reply";
         const res=await fetch(`/api/outlook/emails/${selectedMsg.msId}/${endpoint}`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({body,replyAll})});
         const data=await res.json();
         if (!res.ok) throw new Error(data.message||"Failed to send reply");
-        if (onStatusChange&&status) onStatusChange(selectedMsg.id,status);
-        setSendSuccess(true); closeReply();
-        setTimeout(async () => {
-          await queryClient.invalidateQueries(['thread', selectedMsg.graphId]);
-          await queryClient.invalidateQueries(['messages']);
-          onSyncEmails?.();
-        }, 2000);
-      } catch(err) { setSendError(err.message||"Failed to send. Please try again."); }
-      finally { setIsSending(false); }
+
+        if (selectedMsg?.conversationId) {
+          try {
+            const ticketRes = await fetch(`/api/tickets/by-conversation/${selectedMsg.conversationId}/status`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+              body: JSON.stringify({ status: backendStatus, reason: 'agent_reply' }),
+            });
+            if (!ticketRes.ok) {
+              const errorData = await ticketRes.json();
+              throw new Error(errorData.message || 'Failed to update ticket status');
+            }
+          } catch (error) {
+            console.warn('[sendReply] Ticket status patch failed:', error.message);
+          }
+        }
+
+        // Show the new sent reply immediately in the visible thread.
+        const now = new Date().toISOString();
+        const optimisticReply = {
+          id: `pending-${now}`,
+          graphId: `pending-${now}`,
+          conversationId: selectedMsg.conversationId,
+          from: { emailAddress: { name: 'You', address: myEmail || '' } },
+          toRecipients: [{ emailAddress: { address: selectedMsg.senderEmail || selectedMsg.sender || '' } }],
+          ccRecipients: replyAll ? (selectedMsg.cc || []).map(email => ({ emailAddress: { address: email } })) : [],
+          sentDateTime: now,
+          receivedDateTime: now,
+          body: { contentType: 'HTML', content: body },
+          bodyPreview: (body || '').replace(/<[^>]+>/g, '').slice(0, 120),
+        };
+
+        queryClient.setQueryData(['thread', selectedMsg.graphId], (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            thread: [...old.thread, optimisticReply],
+          };
+        });
+
+        setSendSuccess(true);
+        closeReply();
+        setIsSending(false);
+
+        queryClient.invalidateQueries(['thread', selectedMsg.graphId]);
+        queryClient.invalidateQueries({ queryKey: ['messages'], exact: false });
+        onSyncEmails?.();
+      } catch(err) {
+        // Unlock on error so the status can recover correctly
+        if (selectedMsg?.conversationId) {
+          unlockPendingTicketStatus(selectedMsg.conversationId);
+        }
+        if (status && onStatusChange) onStatusChange(selectedMsg.id, previousStatus);
+        setSendError(err.message||"Failed to send. Please try again.");
+        setIsSending(false);
+      }
       return;
     }
     if (onStatusChange&&status) onStatusChange(selectedMsg.id,status);
@@ -710,8 +818,8 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
         * { font-family: 'Poppins', 'Inter', system-ui, sans-serif !important; }
       `}</style>
 
-      {/* ── Toolbar ── */}
-      <SlaToolbar emailStatus={emailStatus} setEmailStatus={setEmailStatus} selectedMsg={selectedMsg} />
+      {/* ── Toolbar — real ticket status + SLA from backend ── */}
+      <SlaToolbar selectedMsg={selectedMsg} />
 
             {sendSuccess && (
         <div style={{ margin:'10px 16px 0',padding:'9px 14px',background:T.greenLo,border:`1px solid rgba(5,150,105,0.2)`,borderRadius:12,display:'flex',alignItems:'center',gap:10,fontSize:12,fontWeight:600,color:T.green,animation:'ed-fadeUp 0.2s ease',fontFamily:T.font }}>
@@ -843,6 +951,7 @@ export default function EmailDetail({ selectedMsg, onExpandToCompose, outlookCon
             outlookConnected={outlookConnected} selectedMsg={selectedMsg}
             isSending={isSending} sendError={sendError}
             replyAll={replyMode==="replyAll"}
+            ticketStatus={currentTicket?.status || null}
           />
         </div>
       )}

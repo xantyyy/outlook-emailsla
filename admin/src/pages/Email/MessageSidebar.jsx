@@ -1,5 +1,28 @@
 import React, { useState } from "react";
+import { useQuery } from '@tanstack/react-query';
 import { EMAIL_STATUSES } from "./messagingConstants";
+
+/* ── Lightweight per-conversation ticket status fetch ── */
+function useTicketStatus(conversationId) {
+  return useQuery({
+    queryKey: ['ticket', conversationId],
+    queryFn: async () => {
+      if (!conversationId) return null;
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`/api/tickets/by-conversation/${conversationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.ticket || null;
+    },
+    enabled: !!conversationId,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
 
 /* ── Design tokens ── */
 const T = {
@@ -121,8 +144,12 @@ function groupByConversation(messages) {
 
 /* ── Message row — subject on top, sender below, preview below ── */
 function MsgRow({ msg, isSelected, composeMode, onSelectMsg, onContextMenu, indent=false, badgeCount=0, badgeExpanded=false, onBadgeClick=null }) {
-  const st = EMAIL_STATUSES.find(s => s.key === msg.status);
-  const sc = STATUS_META[msg.status];
+  // Fetch real ticket status from backend (falls back to msg.status if no ticket yet)
+  const { data: ticket } = useTicketStatus(msg.conversationId);
+  const realStatus = ticket?.status || msg.status || 'new';
+
+  const st = EMAIL_STATUSES.find(s => s.key === realStatus);
+  const sc = STATUS_META[realStatus];
   const selected = isSelected && !composeMode;
 
   return (

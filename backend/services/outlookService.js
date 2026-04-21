@@ -276,35 +276,20 @@ async function sendEmail(userId, payload) {
 ───────────────────────────────────────────────────────────── */
 async function replyToMessage(userId, messageId, replyBody, replyAll = false) {
   const accessToken = await getValidAccessToken(userId);
-  const endpoint    = replyAll ? 'createReplyAll' : 'createReply';
+  const endpoint    = replyAll ? 'replyAll' : 'reply';
 
-  const { data: draft } = await axios.post(
-    `${GRAPH}/me/messages/${messageId}/${endpoint}`,
-    {},
-    { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-  );
-
-  const draftId = draft.id;
-
-  await axios.patch(
-    `${GRAPH}/me/messages/${draftId}`,
-    {
-      body: {
-        contentType: 'HTML',
-        content: `
-          <div style="font-family: 'DM Sans', Arial, sans-serif; font-size: 14px; color: #1a1a2e; line-height: 1.7;">
-            ${replyBody}
-          </div>
-        `,
-      },
-    },
-    { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
-  );
+  const plainText = replyBody
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{2,}/g, '\n\n')
+    .trim();
 
   await axios.post(
-    `${GRAPH}/me/messages/${draftId}/send`,
-    {},
-    { headers: { Authorization: `Bearer ${accessToken}` } }
+    `${GRAPH}/me/messages/${messageId}/${endpoint}`,
+    { comment: plainText || replyBody },
+    { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
   );
 }
 

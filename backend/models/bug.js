@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const bugSchema = new mongoose.Schema({
   emailId: {
-    type: String, unique: true, sparse: true, index: true
+    type: String, unique: true, sparse: true
   },
   title: { type: String, required: true, trim: true },
   description: { type: String, required: true },
@@ -38,7 +38,6 @@ const bugSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref:  'User',
     default: null,
-    index: true,
   },
   screenshots: [{
     url: String, publicId: String, uploadedAt: { type: Date, default: Date.now }
@@ -65,7 +64,7 @@ const bugSchema = new mongoose.Schema({
   invalidReason: { type: String, default: null },
 
   // ── Archive fields ──────────────────────────────────
-  archived:   { type: Boolean, default: false, index: true },
+  archived:   { type: Boolean, default: false },
   archivedAt: { type: Date,    default: null },
   archivedBy: { type: String,  default: null },
 
