@@ -8,7 +8,7 @@ import {
   HiMoon,
 } from 'react-icons/hi';
 import './Login.css';
-import BugCircleLogo from '../../assets/TexionixLogo-2.png';
+import MailSLALogo from '../../assets/telexlogo.webp';
 import { authAPI } from '../../services/api';
 
 /* ─────────────────────────────────────────────
@@ -32,37 +32,90 @@ const getStoredRateLimit = () => {
 const SLIDES = [
   {
     icon: (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2.5" fill="currentColor" fillOpacity="0.08"/>
+        <path d="M2 7.5 L12 13.5 L22 7.5" />
+        <line x1="2" y1="19" x2="8" y2="13.5"/>
+        <line x1="22" y1="19" x2="16" y2="13.5"/>
+      </svg>
+    ),
+    title: 'Track Every Email SLA',
+    sub:   'Track email deadlines instantly. Spot on-track, at-risk, or breached responses.',
+  },
+  {
+    icon: (
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12,6 12,12 16,14"/>
+      </svg>
+    ),
+    title: 'Never Miss a Deadline',
+    sub:   'Automated escalation alerts notify your team before SLA timers expire. Stay ahead, every time.',
+  },
+  {
+    icon: (
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>
       </svg>
     ),
-    title: 'Track & Resolve Bugs Faster',
-    sub:   'Get real-time visibility into every open issue across your projects from one smart dashboard.',
-  },
-  {
-    icon: (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        <polyline points="9 12 11 14 15 10"/>
-      </svg>
-    ),
-    title: 'Secure & Reliable Access',
-    sub:   'Enterprise-grade security keeps your bug tracker and team data protected at all times.',
-  },
-  {
-    icon: (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-      </svg>
-    ),
     title: 'One Dashboard, Full Clarity',
-    sub:   'Monitor open, closed, and critical bugs at a glance. Resolve faster with smart insights.',
+    sub:   'Team response analytics, compliance rates, and trend reports — all in one unified dashboard.',
   },
 ];
+
+/* ── Animated Envelope Illustration ── */
+const EnvelopeIllustration = () => (
+  <div className="lg-envelope-scene" aria-hidden="true">
+    <div className="lg-ripple lg-ripple-1" />
+    <div className="lg-ripple lg-ripple-2" />
+    <div className="lg-ripple lg-ripple-3" />
+
+    <div className="lg-float-card lg-float-card-left">
+      <div className="lg-fc-from">from: client@acme.com</div>
+      <div className="lg-fc-subject">Invoice Q2 — Review</div>
+      <div className="lg-fc-sla">
+        <span className="lg-fc-dot lg-fc-dot-warn" />
+        <span>2h left</span>
+      </div>
+    </div>
+
+    <div className="lg-float-card lg-float-card-right">
+      <div className="lg-fc-from">SLA Status</div>
+      <div className="lg-fc-status">
+        <span className="lg-fc-dot lg-fc-dot-ok" />
+        <span className="lg-fc-ok-text">On Track</span>
+      </div>
+      <div className="lg-fc-from" style={{ marginTop: 3 }}>91% this week</div>
+    </div>
+
+    <div className="lg-envelope-wrap">
+      <div className="lg-env-body">
+        <svg className="lg-env-flap" viewBox="0 0 210 92" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="0,0 105,68 210,0" />
+        </svg>
+        <div className="lg-env-fold" />
+      </div>
+
+      <div className="lg-letter">
+        <div className="lg-letter-line lg-letter-line-1" />
+        <div className="lg-letter-line lg-letter-line-2" />
+        <div className="lg-letter-line lg-letter-line-3" />
+        <div className="lg-letter-dots">
+          <span className="lg-ldot lg-ldot-1" />
+          <span className="lg-ldot lg-ldot-2" />
+          <span className="lg-ldot lg-ldot-3" />
+        </div>
+      </div>
+
+      <div className="lg-notif-badge">3</div>
+    </div>
+
+    <div className="lg-scene-label">EMAIL SLA TRACKER</div>
+  </div>
+);
 
 /* ═══════════════════════════════════════ */
 const Login = () => {
@@ -242,7 +295,6 @@ const Login = () => {
       <div className="fp-orb fp-orb-1" />
       <div className="fp-orb fp-orb-2" />
 
-      {/* legacy shapes — hidden */}
       <div className="bg-shapes">
         <div className="shape shape-1" />
         <div className="shape shape-2" />
@@ -250,7 +302,7 @@ const Login = () => {
       </div>
 
       {/* ══════════════════════════
-          LEFT — FORM (was right)
+          LEFT — FORM
       ══════════════════════════ */}
       <div className={`fp-card ${darkMode ? 'fp-dark' : 'fp-light'}`}>
 
@@ -267,10 +319,9 @@ const Login = () => {
         <div className="fp-card-inner">
 
           <div className="fp-card-logo-row">
-            <img src={BugCircleLogo} alt="Texionix" />
+            <img src={MailSLALogo} alt="MailSLA" />
             <div className="fp-card-logo-text">
-              <strong>Texionix</strong>
-              <span>Bug Tracker</span>
+              <strong>Email SLA Tracker</strong>
             </div>
           </div>
 
@@ -292,7 +343,7 @@ const Login = () => {
 
           <form className="fp-form" onSubmit={handleLogin}>
             <div className="fp-header">
-              <h2>Admin Login</h2>
+              <h2>Welcome back!</h2>
               <p>Enter your credentials to access the dashboard.</p>
             </div>
 
@@ -303,7 +354,7 @@ const Login = () => {
                 <input
                   id="lg-email"
                   type="email"
-                  placeholder="admin@texionix.com"
+                  placeholder="admin@mailsla.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   disabled={loading || isLockedOut}
@@ -366,7 +417,7 @@ const Login = () => {
       </div>
 
       {/* ══════════════════════════
-          RIGHT — ILLUSTRATION (was left)
+          RIGHT — ILLUSTRATION
       ══════════════════════════ */}
       <div className="fp-left-panel">
         <div className="fp-left-flame" />
@@ -380,19 +431,8 @@ const Login = () => {
             <p className="fp-left-sub">{slide.sub}</p>
           </div>
 
-          {/* Video card */}
-          <div className="lg-video-card">
-            <video
-              className="lg-video-card-player"
-              src="/uploads/bg.mp4"
-              autoPlay loop muted playsInline
-            />
-            <div className="lg-video-card-overlay" />
-            <div className="lg-video-card-label">
-              <span className="lg-video-badge">LIVE PREVIEW</span>
-              <p>Texionix Bug Tracker Dashboard</p>
-            </div>
-          </div>
+          {/* Animated envelope illustration replaces video card */}
+          <EnvelopeIllustration />
 
           {/* Slider dots */}
           <div className="fp-dots">

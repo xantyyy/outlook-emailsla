@@ -12,76 +12,19 @@ import {
 } from 'react-icons/hi';
 import { HiEye, HiEyeSlash } from 'react-icons/hi2';
 import './ForgotPassword.css';
-import BugCircleLogo from '../../assets/TexionixLogo.png';
+import MailSLALogo from '../../assets/telexlogo.webp';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-const BAR_DATA = [
-  { label: 'Jan', h: 38, hi: true  },
-  { label: 'Feb', h: 55, hi: true  },
-  { label: 'Mar', h: 44, hi: true  },
-  { label: 'Apr', h: 62, hi: true  },
-  { label: 'May', h: 48, hi: true  },
-  { label: 'Jun', h: 70, hi: true  },
-  { label: 'Aug', h: 52, hi: false },
-  { label: 'Sep', h: 65, hi: true  },
-  { label: 'Oct', h: 42, hi: true  },
-  { label: 'Nov', h: 58, hi: true  },
-  { label: 'Dec', h: 72, hi: true  },
-];
-
-const DonutChart = () => {
-  const r    = 22;
-  const cx   = 26;
-  const cy   = 26;
-  const circ = 2 * Math.PI * r;
-  const segs = [
-    { pct: 0.42, color: '#f97316' },
-    { pct: 0.28, color: '#22c55e' },
-    { pct: 0.18, color: '#ffffff' },
-    { pct: 0.12, color: 'rgba(255,255,255,0.25)' },
-  ];
-  let off = 0;
-  return (
-    <svg viewBox="0 0 52 52">
-      {segs.map((s, i) => {
-        const dash = s.pct * circ;
-        const gap  = circ - dash;
-        const el = (
-          <circle
-            key={i}
-            cx={cx} cy={cy} r={r}
-            fill="none"
-            stroke={s.color}
-            strokeWidth="7"
-            strokeDasharray={`${dash} ${gap}`}
-            strokeDashoffset={-off * circ}
-          />
-        );
-        off += s.pct;
-        return el;
-      })}
-    </svg>
-  );
-};
 
 const SLIDES = [
   {
     icon: (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>
-      </svg>
-    ),
-    title: 'Track & Resolve Bugs Faster',
-    sub:   'Get real-time visibility into every open issue across your projects from one smart dashboard.',
-  },
-  {
-    icon: (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        <polyline points="9 12 11 14 15 10"/>
+        <rect x="2" y="5" width="20" height="14" rx="2.5" fill="currentColor" fillOpacity="0.08"/>
+        <path d="M2 7.5 L12 13.5 L22 7.5" />
+        <line x1="2" y1="19" x2="8" y2="13.5"/>
+        <line x1="22" y1="19" x2="16" y2="13.5"/>
       </svg>
     ),
     title: 'Secure Account Recovery',
@@ -89,18 +32,80 @@ const SLIDES = [
   },
   {
     icon: (
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="7.5" cy="15.5" r="5.5"/>
-        <path d="M21 2l-9.6 9.6"/>
-        <path d="M15.5 7.5l3 3L22 7l-3-3"/>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <polyline points="9 12 11 14 15 10"/>
       </svg>
     ),
-    title: 'Back in Three Easy Steps',
-    sub:   'Verify your email, enter your OTP, and set a fresh password — done in under a minute.',
+    title: 'Your Data Stays Safe',
+    sub:   'End-to-end encrypted recovery flow. Only you can access your Email SLA Tracker account.',
+  },
+  {
+    icon: (
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12,6 12,12 16,14"/>
+      </svg>
+    ),
+    title: 'Back in Under a Minute',
+    sub:   'Verify your email, enter your OTP, and set a fresh password — done in three easy steps.',
   },
 ];
 
+/* ── Animated Envelope Illustration ── */
+const EnvelopeIllustration = () => (
+  <div className="lg-envelope-scene" aria-hidden="true">
+    <div className="lg-ripple lg-ripple-1" />
+    <div className="lg-ripple lg-ripple-2" />
+    <div className="lg-ripple lg-ripple-3" />
+
+    <div className="lg-float-card lg-float-card-left">
+      <div className="lg-fc-from">from: support@mailsla.com</div>
+      <div className="lg-fc-subject">Password Reset OTP</div>
+      <div className="lg-fc-sla">
+        <span className="lg-fc-dot lg-fc-dot-warn" />
+        <span>Expires in 10 min</span>
+      </div>
+    </div>
+
+    <div className="lg-float-card lg-float-card-right">
+      <div className="lg-fc-from">Security</div>
+      <div className="lg-fc-status">
+        <span className="lg-fc-dot lg-fc-dot-ok" />
+        <span className="lg-fc-ok-text">Verified</span>
+      </div>
+      <div className="lg-fc-from" style={{ marginTop: 3 }}>OTP secured</div>
+    </div>
+
+    <div className="lg-envelope-wrap">
+      <div className="lg-env-body">
+        <svg className="lg-env-flap" viewBox="0 0 210 92" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="0,0 105,68 210,0" />
+        </svg>
+        <div className="lg-env-fold" />
+      </div>
+
+      <div className="lg-letter">
+        <div className="lg-letter-line lg-letter-line-1" />
+        <div className="lg-letter-line lg-letter-line-2" />
+        <div className="lg-letter-line lg-letter-line-3" />
+        <div className="lg-letter-dots">
+          <span className="lg-ldot lg-ldot-1" />
+          <span className="lg-ldot lg-ldot-2" />
+          <span className="lg-ldot lg-ldot-3" />
+        </div>
+      </div>
+
+      <div className="lg-notif-badge">!</div>
+    </div>
+
+    <div className="lg-scene-label">EMAIL SLA TRACKER</div>
+  </div>
+);
+
+/* ═══════════════════════════════════════ */
 const ForgotPassword = () => {
   const [step,        setStep]        = useState(1);
   const [email,       setEmail]       = useState('');
@@ -352,16 +357,19 @@ const ForgotPassword = () => {
   return (
     <div className={`fp-page ${darkMode ? 'fp-dark-page' : 'fp-light-page'}`}>
 
-      <div className="bg-shapes">
-        <div className="shape shape-1" />
-        <div className="shape shape-2" />
-        <div className="shape shape-3" />
-      </div>
+      {/* ── Animated background ── */}
+      <div className="fp-page-bg-mesh" />
+      <div className="fp-page-bg-grid" />
+      <div className="fp-orb fp-orb-1" />
+      <div className="fp-orb fp-orb-2" />
 
       {/* ══════════════════════════
           LEFT PANEL — illustration
       ══════════════════════════ */}
       <div className="fp-left-panel">
+        <div className="fp-left-flame" />
+        <div className="fp-left-glow" />
+
         <div className="fp-left-content">
 
           <div key={slideKey} className="fp-slide-block">
@@ -370,59 +378,7 @@ const ForgotPassword = () => {
             <p className="fp-left-sub">{slide.sub}</p>
           </div>
 
-          <div className="fp-dash-card">
-            <div className="fp-donut-badge">
-              <div className="fp-donut-title">Total Bugs</div>
-              <div className="fp-donut-ring">
-                <DonutChart />
-                <div className="fp-donut-center-text">
-                  100+<small>Total</small>
-                </div>
-              </div>
-              <div className="fp-donut-legend">
-                {[
-                  { color: '#f97316', label: 'Critical' },
-                  { color: '#22c55e', label: 'Fixed'    },
-                  { color: '#ffffff', label: 'Open'     },
-                ].map((d, i) => (
-                  <div key={i} className="fp-donut-leg-item">
-                    <div className="fp-donut-leg-dot" style={{ background: d.color }} />
-                    {d.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="fp-dash-card-title">Bug Reports Overview</div>
-            <div className="fp-dash-card-legend">
-              <div className="fp-dash-legend-item">
-                <div className="fp-dash-legend-dot" style={{ background: '#ffffff' }} />
-                Open
-              </div>
-              <div className="fp-dash-legend-item">
-                <div className="fp-dash-legend-dot" style={{ background: 'rgba(255,255,255,0.35)' }} />
-                Closed
-              </div>
-            </div>
-
-            <div className="fp-bar-chart">
-              {BAR_DATA.map((b, i) => (
-                <div
-                  key={i}
-                  className="fp-bar"
-                  style={{
-                    height:     `${b.h}%`,
-                    background: b.hi ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)',
-                  }}
-                />
-              ))}
-            </div>
-            <div className="fp-bar-label-row">
-              {BAR_DATA.map((b, i) => (
-                <span key={i} className="fp-bar-label">{b.label}</span>
-              ))}
-            </div>
-          </div>
+          <EnvelopeIllustration />
 
           <div className="fp-dots">
             {SLIDES.map((_, i) => (
@@ -456,10 +412,9 @@ const ForgotPassword = () => {
         <div className="fp-card-inner">
 
           <div className="fp-card-logo-row">
-            <img src={BugCircleLogo} alt="Texionix" />
+            <img src={MailSLALogo} alt="Email SLA Tracker" />
             <div className="fp-card-logo-text">
-              <strong>Texionix</strong>
-              <span>Bug Tracker</span>
+              <strong>Email SLA Tracker</strong>
             </div>
           </div>
 
